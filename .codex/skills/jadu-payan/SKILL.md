@@ -1,17 +1,13 @@
 ---
 name: jadu-payan
-description: Session-end workflow for Jadu. Use when the user invokes jadu-payan or wants to close a session by writing a compact brief and updating WORKLOG.md/TASKS.md/AGENTS.md from it. Does not push - jadu-push is separate and explicit.
+description: Session-end workflow for Jadu. Use when the user invokes jadu-payan or wants to close a session by writing a compact brief, updating WORKLOG.md/TASKS.md/AGENTS.md from it, then committing and pushing the result.
 ---
 
 # Jadu Payan - Session End
 
 Close a work session by producing a compact session brief, updating documentation from
-that brief, and reporting the result. The brief is the source of truth; do not infer
-unmentioned work from git history.
-
-This skill does not push. Run `jadu-push` (or ask explicitly to push) separately when
-you're ready to commit and push - see this repo's README for how to combine them if you'd
-rather Payan always push too.
+that brief, committing the resulting changes, pushing them, and reporting the result.
+The brief is the source of truth; do not infer unmentioned work from git history.
 
 ## Workflow
 
@@ -116,17 +112,29 @@ If `jadu-bidar` set a 30-minute focus reminder this session, cancel it now.
 - If no timer tool is available, or no reminder was set this session, skip silently.
 - If the user set an external reminder instead, remind them once to clear it themselves.
 
-### 7. Report back
+### 7. Commit and push
+
+After the closeout edits are complete:
+
+1. Run `git status --short` and inspect the staged/unstaged shape.
+2. Stage all changes with `git add -A`.
+3. If `scripts/check-secrets.ps1` exists, run it after staging and before committing.
+4. Create a concise commit message from the session title, unless the user provided one.
+5. Run `git push`.
+6. If there is nothing to commit, skip the commit and push only if there are already local commits to push.
+7. If commit or push fails because of auth, divergence, network, or secret-scan failure, report the blocker and stop.
+
+### 8. Report back
 
 End with a concise report: what was updated, what was skipped and why, whether archiving
-ran, whether the session's 30-minute focus reminder was cancelled, and a reminder that
-nothing was pushed - run `jadu-push` if you want that now.
+ran, whether the session's 30-minute focus reminder was cancelled, the commit hash, and
+whether push succeeded.
 
 ## Rules
 
 - Use the session brief as the source of truth.
-- Only write to `WORKLOG.md`, `TASKS.md`, and `AGENTS.md` - never `CLAUDE.md`, `README.md`, or any other file.
+- During closeout documentation, write only to `WORKLOG.md`, `TASKS.md`, and `AGENTS.md` - never `CLAUDE.md`, `README.md`, or any other file.
 - Obey this project's `AGENTS.md` approval rules before editing docs when required.
 - Prefer documentation/task updates only; do not change implementation files as part of session close.
-- Never run git commands as part of this skill - that's `jadu-push`'s job, invoked separately.
+- Payan includes the push workflow: stage all changes, run the repo secret scan when present, commit, and push.
 - Cancel any 30-minute focus reminder `jadu-bidar` set - it must not fire after the session is closed.

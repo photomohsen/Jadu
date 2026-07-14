@@ -1,4 +1,4 @@
 interface:
   display_name: "Jadu Payan"
-  short_description: "Close a session and update docs"
-  default_prompt: "Use $jadu-payan to write a session brief and update WORKLOG.md/TASKS.md."
+  short_description: "Close, commit, and push a session"
+  default_prompt: "Use $jadu-payan to write a session brief, update WORKLOG.md/TASKS.md, commit, and push."
