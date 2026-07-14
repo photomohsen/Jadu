@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jadu Push"
+  short_description: "Commit and push, only when asked"
+  default_prompt: "Use $jadu-push to stage this session's changes, commit, and push."

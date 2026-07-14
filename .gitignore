@@ -1,0 +1,12 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Claude Code — local session state
+.claude/scheduled_tasks.json
+.claude/scheduled_tasks.lock
+.claude/settings.local.json

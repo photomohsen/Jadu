@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jadu Kar"
+  short_description: "Manage tasks through conversation"
+  default_prompt: "Use $jadu-kar to add, update, or review tasks in TASKS.md."
