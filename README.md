@@ -1,8 +1,9 @@
 # Jadu (جادو)
 
 Jadu is five small AI-agent workflow skills that keep a coding session structured:
-start with context, work through tasks, close with a clean record, and never push
-without being asked. Works the same in **Claude Code** and **Codex**.
+start with context, work through tasks, close with a clean record, and push only when
+the workflow or user request explicitly calls for it. Works the same in **Claude Code**
+and **Codex**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -20,8 +21,8 @@ agent, in any project, on any machine, picks up exactly where the last session l
 | **Zad** | `/jadu-zad` | `jadu-zad` | Ask setup questions once, write `PROJECT.md` / `AGENTS.md` / `TASKS.md` |
 | **Bidar** | `/jadu-bidar` | `jadu-bidar` | Start a session — read context, pull latest, expand tasks, set a 30-min focus reminder |
 | **Kar** | `/jadu-kar` | `jadu-kar` | Manage `TASKS.md` through conversation — add, update, complete, review |
-| **Payan** | `/jadu-payan` | `jadu-payan` | Close a session — write a brief, update docs and tasks |
-| **Push** | `/jadu-push` | `jadu-push` | Commit and push — **only** when you explicitly ask |
+| **Payan** | `/jadu-payan` | `jadu-payan` | Close a session — write a brief, update docs/tasks, commit, and push |
+| **Push** | `/jadu-push` | `jadu-push` | Commit and push without a full session close |
 
 `Zad` = provision, `Bidar` = wake up, `Kar` = work, `Payan` = end, `Push` = push. (Persian
 words — Jadu means "magic".)
@@ -114,7 +115,7 @@ Set up my first Jadu workspace.
    yet, continue locally.
 8. In the project folder, run `jadu-zad` or `/jadu-zad` and ask me the normal setup
    questions.
-9. Do not push anything unless I explicitly say `jadu-push` or `push`.
+9. Do not push anything unless I explicitly say `jadu-payan`, `jadu-push`, or `push`.
 ```
 
 Manual version:
@@ -158,14 +159,13 @@ jadu-zad     (once)   → initialize this project's context files
 jadu-bidar   (start)  → read context, pull latest, expand tasks, set a focus reminder
 jadu-kar     (as needed) → add/update tasks while you work
    ... do the actual work ...
-jadu-payan   (end)    → write the session brief, update WORKLOG.md and TASKS.md
-jadu-push    (only if you want to) → commit and push
+jadu-payan   (end)    → write the session brief, update docs/tasks, commit, and push
+jadu-push    (manual) → commit and push without a full session close
 ```
 
-`Payan` never pushes by itself — that split is deliberate, so nothing reaches a remote
-without you saying so. If you'd rather `Payan` always push too, tell your agent to fold
-`jadu-push`'s steps into the end of `jadu-payan.md` / the Codex `SKILL.md` — it's plain
-Markdown, edit it like any file.
+`Payan` now includes the push workflow: after it writes the session brief and updates
+`WORKLOG.md` / `TASKS.md` / `AGENTS.md`, it stages changes, commits, and pushes. Use
+`jadu-push` when you want to commit and push without doing the full Payan closeout.
 
 ---
 
@@ -212,7 +212,8 @@ Codex, or otherwise — behaves predictably:
 4. Start coding or changing implementation files only after the user explicitly gives permission.
 5. A plain `go` approves the currently stated next step; `go with 1, 2, and 3` approves that full sequence. Once approved, complete it without asking again — pause only for a genuine ambiguity or blocker.
 6. Do not make decisions on the user's behalf. When something is ambiguous, ask.
-7. Never run `git push` unless the user explicitly asks.
+7. Never run `git push` unless the user explicitly asks, or the user invoked a workflow
+   such as `jadu-payan` that clearly includes commit and push.
 
 Copy, trim, or ignore this — it's a starting point, not a requirement.
 
