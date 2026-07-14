@@ -113,6 +113,22 @@ agent reads and edits like any other file in your repo.
 
 ---
 
+## Optional: project secrets (`.env`)
+
+**Jadu itself needs no secrets** — none of the five skills read a token or key. But if
+*your project* uses API keys or credentials, the repo ships an optional
+[`.env.example`](.env.example) as a starting point:
+
+```bash
+cp .env.example .env   # then fill in real values
+```
+
+`.gitignore` already excludes `.env` (and keeps `.env.example`), so your real secrets
+never get committed. Commit only the keys-only template. If your project needs no
+secrets, ignore this entirely and delete both files.
+
+---
+
 ## Suggested golden rules for `AGENTS.md`
 
 Many projects add something like this to their `AGENTS.md` so every agent — Claude Code,
