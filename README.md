@@ -47,7 +47,16 @@ on this machine:
    for the 30-minute focus sound).
 5. Ask me before overwriting any file or folder that already exists with the same name.
 6. Report exactly what was installed, skipped, or needs my decision.
-7. Then tell me to run `jadu-zad` (or `/jadu-zad`) to set up the current project.
+7. Then offer first-run setup:
+   - ask whether I want a new Jadu hub folder, an existing project folder, or only the
+     global skill install
+   - if I choose a hub, ask for the hub name and location, create it, and add a
+     `projects/` folder inside it
+   - ask for my first project name and where it should live
+   - check whether Git is installed and whether GitHub is connected; if not, help me
+     create a GitHub account or sign in, then guide me through `gh auth login` or open
+     the GitHub authorization page
+   - run `jadu-zad` (or `/jadu-zad`) in the new project folder to create its context files
 
 Do not push, publish, or change anything outside these installs.
 ```
@@ -76,6 +85,69 @@ Start a new Codex session and invoke a workflow by name, e.g. `jadu-bidar`.
 
 Either way, installing globally (`~/.claude`, `~/.codex`) means every project on that
 machine gets Jadu — you don't need to repeat this per project.
+
+---
+
+## First-run setup: hub, GitHub, first project
+
+After installing the skills, a new user usually needs three things:
+
+1. A **hub folder** somewhere on their machine, for example `~/Projects`, `~/AI Work`,
+   or any folder name they prefer.
+2. Optional **GitHub connection**, so projects can be backed up, shared, or pushed when
+   the user explicitly asks.
+3. A first **project folder** inside the hub, initialized with Jadu's context files.
+
+You can ask an agent to do that setup with this prompt:
+
+```text
+Set up my first Jadu workspace.
+
+1. Ask me for the hub folder name and where I want it created.
+2. Create the hub folder and a `projects/` folder inside it.
+3. Ask me for my first project name and desired folder path.
+4. Create that project folder.
+5. Check whether Git is installed.
+6. Check whether GitHub CLI (`gh`) is installed and authenticated.
+7. If GitHub is not connected, help me create a GitHub account or sign in by running
+   `gh auth login` or by opening the GitHub authorization page. If I do not want GitHub
+   yet, continue locally.
+8. In the project folder, run `jadu-zad` or `/jadu-zad` and ask me the normal setup
+   questions.
+9. Do not push anything unless I explicitly say `jadu-push` or `push`.
+```
+
+Manual version:
+
+```bash
+mkdir -p ~/Projects/projects/my-first-project
+cd ~/Projects/projects/my-first-project
+
+# Optional GitHub sign-in, if you want remote backup later:
+gh auth login
+
+# Then initialize the project with Jadu:
+# Claude Code: /jadu-zad
+# Codex:      jadu-zad
+```
+
+GitHub is optional. Jadu works locally with Markdown files even if the user has no
+GitHub account yet. Connecting GitHub only matters when they want backup, collaboration,
+or `jadu-push`.
+
+There are two separate things to keep in mind:
+
+1. **The public Jadu repo** — [github.com/photomohsen/Jadu](https://github.com/photomohsen/Jadu).
+   This is the source people clone or ask an agent to install from. It should stay generic
+   and usable for anyone.
+2. **The local installed Jadu skills** — the files copied into `~/.claude/commands/` or
+   `~/.codex/skills/` on one machine. These are what Claude Code or Codex actually runs.
+   They can be updated from the public repo, or customized locally for a specific hub.
+
+For example, Mohsen's own workspace has local Jadu skills customized for the
+`Mohsen Projects` hub. Those local skills are not the same thing as the public repo:
+the public repo is the reusable installer/source, while the local installed skills are
+the working copy an agent uses during daily sessions.
 
 ---
 
