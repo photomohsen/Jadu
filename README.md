@@ -95,8 +95,8 @@ After installing the skills, a new user usually needs three things:
 
 1. A **hub folder** somewhere on their machine, for example `~/Projects`, `~/AI Work`,
    or any folder name they prefer.
-2. Optional **GitHub connection**, so projects can be backed up, shared, or pushed when
-   the user explicitly asks.
+2. Optional **GitHub connection**, so projects can be backed up, shared, pushed when
+   the user explicitly asks, or synced across multiple devices and agents.
 3. A first **project folder** inside the hub, initialized with Jadu's context files.
 
 You can ask an agent to do that setup with this prompt:
@@ -132,11 +132,12 @@ gh auth login
 # Codex:      jadu-zad
 ```
 
-GitHub is optional. Jadu works locally with Markdown files even if the user has no
-GitHub account yet. Connecting GitHub only matters when they want backup, collaboration,
-or `jadu-push`.
+GitHub is optional. Jadu is agent-agnostic and works locally with Markdown files even if
+the user has no GitHub account yet. Connecting GitHub only matters when they want backup,
+collaboration, `jadu-push`, or syncing the same Jadu workflow across multiple agents on
+multiple devices.
 
-There are two separate things to keep in mind:
+There are two separate, agent-agnostic things to keep in mind:
 
 1. **The public Jadu repo** — [github.com/photomohsen/Jadu](https://github.com/photomohsen/Jadu).
    This is the source people clone or ask an agent to install from. It should stay generic
@@ -144,11 +145,6 @@ There are two separate things to keep in mind:
 2. **The local installed Jadu skills** — the files copied into `~/.claude/commands/` or
    `~/.codex/skills/` on one machine. These are what Claude Code or Codex actually runs.
    They can be updated from the public repo, or customized locally for a specific hub.
-
-For example, Mohsen's own workspace has local Jadu skills customized for the
-`Mohsen Projects` hub. Those local skills are not the same thing as the public repo:
-the public repo is the reusable installer/source, while the local installed skills are
-the working copy an agent uses during daily sessions.
 
 ---
 
