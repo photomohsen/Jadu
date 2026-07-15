@@ -9,6 +9,10 @@ Close a work session by producing a compact session brief, updating documentatio
 that brief, committing the resulting changes, pushing them, and reporting the result.
 The brief is the source of truth; do not infer unmentioned work from git history.
 
+**Do NOT ask for confirmation at any step - just do it.** Running `jadu-payan` is itself the
+instruction to write the docs, commit, and push; run every step through to the push without
+pausing for approval.
+
 ## Workflow
 
 ### 0. Write the session brief first
@@ -39,7 +43,7 @@ AGENTS_MD_CHANGES: yes|no - <what changed structurally, or omit if no>
 MEMORY_CHANGES: yes|no - <new durable preference/pattern to save, or omit if no>
 ```
 
-Output the brief visibly in a code block so the user can review it.
+Output the brief visibly in a code block, then continue - do not wait for the user to review it.
 
 ### 1. Update `WORKLOG.md`
 

@@ -12,6 +12,10 @@ The reminder serves two purposes: keeping you focused and keeping sessions short
 sessions mean smaller context windows, which saves tokens and keeps agent responses
 sharper.
 
+**Do NOT ask for confirmation at any step - just do it.** Read context, expand tasks, and set
+the reminder autonomously. This does not extend to implementing features or code, which still
+follows the project's `AGENTS.md` approval rules.
+
 ## Workflow
 
 ### 0. Get current time
@@ -67,9 +71,8 @@ If `TASKS.md` exists, add useful subtasks to open task blocks. Rules:
 - Keep each new item one line, prefixed with `- [ ]`.
 - Add subtasks under relevant existing task blocks; do not create new top-level tasks unless the user asked.
 - Do not remove, check off, or re-prioritize existing items.
-- If repository instructions require approval before file changes, present the proposed `TASKS.md` edits and wait for explicit permission before editing.
 
-If `TASKS.md` is missing, propose creating one but do not create it without approval.
+If `TASKS.md` is missing, create one - no need to ask first.
 
 ### 4. Set or suggest the 30-minute reminder
 
@@ -91,15 +94,10 @@ Print a short summary:
 - whether the 30-minute reminder was set or unavailable
 - one-line suggestion for where to start
 
-### 6. Gate implementation on explicit approval
+### 6. Hand off to implementation
 
-Before any implementation begins after this planning-only workflow:
-
-1. Present the complete numbered implementation plan.
-2. Ask for explicit approval covering the step or named sequence to implement.
-3. Treat a plain `go` as approval for the currently stated next step.
-4. Treat an explicit instruction such as `go with 1, 2, and 3` as approval for that full named sequence.
-5. Complete every approved step without asking for repeated approval; pause only for a genuine ambiguity, blocker, or unapproved step.
+Bidar is planning only - it never writes feature code itself. When you move on to actual
+implementation afterward, follow the project's `AGENTS.md` approval rules for code changes.
 
 ## Rules
 

@@ -1,9 +1,9 @@
 # Jadu (جادو)
 
-Jadu is five small AI-agent workflow skills that keep a coding session structured:
-start with context, work through tasks, close with a clean record, and push only when
-the workflow or user request explicitly calls for it. Works the same in **Claude Code**
-and **Codex**.
+**Jadu** (جادو) is Persian for "magic." It's five small AI-agent workflow skills that keep
+a coding session structured: start with context, work through tasks, close with a clean
+record, and push only when the workflow or user request explicitly calls for it. Works the
+same in **Claude Code** and **Codex**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -16,16 +16,15 @@ Based on the original [25mordad/Jadu](https://github.com/25mordad/Jadu) by Bahma
 Every session follows the same loop — **Zad → Bidar → Kar → Payan → Push** — so any
 agent, in any project, on any machine, picks up exactly where the last session left off.
 
-| Workflow | Claude Code | Codex | What it does |
-|---|---|---|---|
-| **Zad** | `/jadu-zad` | `jadu-zad` | Ask setup questions once, write `PROJECT.md` / `AGENTS.md` / `TASKS.md` |
-| **Bidar** | `/jadu-bidar` | `jadu-bidar` | Start a session — read context, pull latest, expand tasks, set a 30-min focus reminder |
-| **Kar** | `/jadu-kar` | `jadu-kar` | Manage `TASKS.md` through conversation — add, update, complete, review |
-| **Payan** | `/jadu-payan` | `jadu-payan` | Close a session — write a brief, update docs/tasks, commit, and push |
-| **Push** | `/jadu-push` | `jadu-push` | Commit and push without a full session close |
+| Workflow | Persian | Meaning | Command | What it does |
+|---|---|---|---|---|
+| **Zad** | زاد | born | `/jadu-zad` · `jadu-zad` | Ask setup questions once, write `PROJECT.md` / `AGENTS.md` / `TASKS.md` |
+| **Bidar** | بیدار | wake up | `/jadu-bidar` · `jadu-bidar` | Start a session — read context, pull latest, expand tasks, set a 30-min focus reminder |
+| **Kar** | کار | work | `/jadu-kar` · `jadu-kar` | Manage `TASKS.md` through conversation — add, update, complete, review |
+| **Payan** | پایان | end | `/jadu-payan` · `jadu-payan` | Close a session — write a brief, update docs/tasks, commit, and push |
+| **Push** | — | push (English) | `/jadu-push` · `jadu-push` | Commit and push without a full session close |
 
-`Zad` = provision, `Bidar` = wake up, `Kar` = work, `Payan` = end, `Push` = push. (Persian
-words — Jadu means "magic".)
+Command shows **Claude Code** (`/jadu-…`) · **Codex** (`jadu-…`, no leading slash).
 
 ---
 
@@ -33,17 +32,20 @@ words — Jadu means "magic".)
 
 ### Option A — copy-paste prompt (easiest)
 
-Open Claude Code or Codex in any project, paste this, and let the agent do it:
+Open Claude Code or Codex in any project, paste this, and let the agent do it. It installs
+Jadu **globally** (into your user-level `~/.claude` / `~/.codex`), so every project on the
+machine gets it — you only do this once:
 
 ```
 Install the Jadu agent workflow skills from https://github.com/photomohsen/Jadu
-on this machine:
+GLOBALLY on this machine — into my user-level config, so they work in every project,
+not just this one:
 
 1. Fetch that repo (clone it to a temp folder, or read the raw files).
-2. If I'm using Claude Code: copy every file from its `.claude/commands/` into
-   `~/.claude/commands/` (create the folder if missing).
-3. If I'm using Codex: copy every folder from its `.codex/skills/` into
-   `~/.codex/skills/` (create the folder if missing).
+2. If I'm using Claude Code: copy every file from its `.claude/commands/` into my
+   GLOBAL `~/.claude/commands/` (create the folder if missing) — NOT this project's local `.claude/`.
+3. If I'm using Codex: copy every folder from its `.codex/skills/` into my GLOBAL
+   `~/.codex/skills/` (create the folder if missing) — NOT this project's local `.codex/`.
 4. Optionally copy `sounds/30.mp3` to `~/.claude/sounds/30.mp3` (Claude Code only,
    for the 30-minute focus sound).
 5. Ask me before overwriting any file or folder that already exists with the same name.
@@ -243,6 +245,10 @@ If the file or `ffplay` isn't present, the reminder just skips the sound silentl
 error, no fake success.
 
 ---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for what's changed across versions.
 
 ## Contributing
 
