@@ -6,9 +6,10 @@
 ## Overview
 
 Jadu structures a coding session into a repeatable loop: initialize a project's context
-once (Zad), start each session with fresh context and a focus reminder (Bidar), manage
-tasks conversationally (Kar), close with a written brief and updated docs (Payan), and
-push only when explicitly asked (Push). Public, MIT-licensed, forked and generalized from
+once (Zad), start each session with fresh context (Bidar), manage tasks conversationally
+and start the 30-minute focus reminder on the first call (Kar), close with a written brief,
+updated docs, and a standing `/clear` + `/jadu-bidar` instruction (Payan), and push only
+when explicitly asked (Push). Public, MIT-licensed, forked and generalized from
 [25mordad/Jadu](https://github.com/25mordad/Jadu).
 
 ## Setup & Tools

@@ -2,6 +2,20 @@
 
 Manages `TASKS.md` through conversation. Never asks the user to edit the file directly.
 
+## Set the focus reminder (first invocation only)
+
+The 30-minute reminder starts here, not at `jadu-bidar` — waking up and reading context
+isn't work yet; `jadu-kar` is where real work begins.
+
+- If no 30-minute focus reminder is active yet this session, set one now: if a
+  reminder/timer tool is available, set one recurring 30-minute reminder ("30 min — check
+  your focus, review progress on current task"). If no reminder/timer tool is available, do
+  not fake it and do not create OS-level cron jobs; tell the user once to set an external
+  30-minute reminder.
+- If a reminder is already active this session (set by an earlier `jadu-kar` call), skip
+  silently — never stack a second recurring reminder.
+- Do this before handling whichever mode (A/B/C/D) applies below.
+
 ## File format
 
 `TASKS.md` may use this compact structure:

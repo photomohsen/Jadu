@@ -29,3 +29,12 @@
   skill's own reports now prefix status lines with the `⬜`/`🔄`/`⚠️`/`✅` markers. Zad's
   secrets/registry step was deliberately left hub-only. `PROJECT.md`'s stale "pending GitHub
   repo creation" line was corrected. See `CHANGELOG.md` [0.5.0].
+
+- [x] ✅ **Move the focus reminder from Bidar to Kar; make Payan's clear+restart line
+  unconditional — completed 2026-07-18.** The 30-minute reminder now starts on `jadu-kar`'s
+  first invocation each session instead of `jadu-bidar`'s; Kar guards against stacking a
+  second one. Payan always ends with `Session closed. Now run /clear, then start the next
+  session with /jadu-bidar.` — stated as a fact every time, not a conditional suggestion;
+  this cannot be automated, it still needs the user's own keystroke. Updated every
+  cross-reference (`AGENTS.md`, `CLAUDE.md`, `README.md`, `PROJECT.md`, Codex frontmatter).
+  See `CHANGELOG.md` [0.6.0].

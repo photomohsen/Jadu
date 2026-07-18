@@ -3,6 +3,20 @@
 All notable changes to the public Jadu repo. Newest first. This project uses simple,
 date-stamped version tags (no strict semver — it's a docs/skills collection).
 
+## [0.6.0] — 2026-07-18
+
+- **Focus reminder moved from Bidar to Kar.** The 30-minute reminder now starts on `jadu-kar`'s
+  first invocation each session, not on `jadu-bidar`'s. Reasoning: waking up and reading
+  context isn't work yet — the clock should start when real work does. Kar guards against
+  stacking a second recurring reminder on later calls in the same session; Bidar's report
+  now notes the reminder hasn't started yet instead of claiming to set it.
+- **Payan's session-close line is now unconditional.** It always ends with `Session closed.
+  Now run /clear, then start the next session with /jadu-bidar.` — stated as fact, not "if
+  you'd like." This cannot be triggered automatically by any tool available to Payan; the
+  user still has to run both commands themselves.
+- Updated every cross-reference to reminder ownership: `AGENTS.md`, `CLAUDE.md`, `README.md`,
+  `PROJECT.md`, and both Codex frontmatter descriptions for Bidar and Kar.
+
 ## [0.5.0] — 2026-07-18
 
 Converges this base repo with the private hub-customized fork, after a side-by-side audit

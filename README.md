@@ -19,9 +19,9 @@ agent, in any project, on any machine, picks up exactly where the last session l
 | Workflow | Persian | Meaning | Command | What it does |
 |---|---|---|---|---|
 | **Zad** | زاد | born | `/jadu-zad` · `jadu-zad` | Ask setup questions once, write `PROJECT.md` / `AGENTS.md` / `TASKS.md` |
-| **Bidar** | بیدار | wake up | `/jadu-bidar` · `jadu-bidar` | Start a session — read context, pull latest, expand tasks, set a 30-min focus reminder |
-| **Kar** | کار | work | `/jadu-kar` · `jadu-kar` | Manage `TASKS.md` through conversation — add, update, complete, review |
-| **Payan** | پایان | end | `/jadu-payan` · `jadu-payan` | Close a session — write a brief, update docs/tasks, commit, and push |
+| **Bidar** | بیدار | wake up | `/jadu-bidar` · `jadu-bidar` | Start a session — read context, pull latest, expand tasks (no reminder yet) |
+| **Kar** | کار | work | `/jadu-kar` · `jadu-kar` | Manage `TASKS.md` through conversation — add, update, complete, review; starts the 30-min focus reminder on its first call each session |
+| **Payan** | پایان | end | `/jadu-payan` · `jadu-payan` | Close a session — write a brief, update docs/tasks, commit and push, then tell you to `/clear` and run `/jadu-bidar` next |
 | **Push** | — | push (English) | `/jadu-push` · `jadu-push` | Commit and push without a full session close |
 
 Command shows **Claude Code** (`/jadu-…`) · **Codex** (`jadu-…`, no leading slash).
@@ -154,8 +154,8 @@ There are two separate, agent-agnostic things to keep in mind:
 
 ```
 jadu-zad     (once)   → initialize this project's context files
-jadu-bidar   (start)  → read context, pull latest, expand tasks, set a focus reminder
-jadu-kar     (as needed) → add/update tasks while you work
+jadu-bidar   (start)  → read context, pull latest, expand tasks (no reminder yet)
+jadu-kar     (as needed) → add/update tasks — the 30-min focus reminder starts here
    ... do the actual work ...
 jadu-payan   (end)    → write the session brief, update docs/tasks, commit, and push
 jadu-push    (manual) → commit and push without a full session close
@@ -164,6 +164,8 @@ jadu-push    (manual) → commit and push without a full session close
 `Payan` now includes the push workflow: after it writes the session brief and updates
 `WORKLOG.md` / `TASKS.md` / `AGENTS.md`, it stages changes, commits, and pushes. Use
 `jadu-push` when you want to commit and push without doing the full Payan closeout.
+Payan always closes by telling you to run `/clear` then `/jadu-bidar` for the next
+session — that part needs your own keystroke; no skill can trigger it for you.
 
 ---
 
@@ -229,9 +231,10 @@ Copy, trim, or ignore this — it's a starting point, not a requirement.
 
 ## Optional: 30-minute sound alert
 
-`jadu-bidar` only ever sets a 30-minute focus reminder — no 60-minute variant. Claude
-Code can play a sound at each reminder if `ffplay` (part of `ffmpeg`) is installed and
-`30.mp3` exists at `~/.claude/sounds/`:
+`jadu-kar` sets the only focus reminder — 30 minutes, on its first call each session, no
+60-minute variant. (`jadu-bidar` doesn't set one at all; waking up and reading context
+isn't billable focus time.) Claude Code can play a sound at each reminder if `ffplay`
+(part of `ffmpeg`) is installed and `30.mp3` exists at `~/.claude/sounds/`:
 
 ```bash
 # macOS:  brew install ffmpeg

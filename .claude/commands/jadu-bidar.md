@@ -1,14 +1,16 @@
 # Bidar — Session Start
 
-Called at the beginning of a work session. Studies the project's current state, expands
-its task list with new subtasks, and sets or suggests one 30-minute focus reminder.
+Called at the beginning of a work session. Studies the project's current state and expands
+its task list with new subtasks. Bidar does **not** set the 30-minute focus reminder — that
+starts with the first `jadu-kar` call of the session, not with waking up and reading
+context. See `jadu-kar`'s reminder step.
 
 The reminder serves two purposes: keeping you focused and keeping sessions short. Shorter
 sessions mean smaller context windows, which saves tokens and keeps agent responses sharper.
 
-**Do NOT ask for confirmation at any step — just do it.** Read context, expand tasks, and set
-the reminder autonomously. This does not extend to implementing features or code, which still
-follows the project's `AGENTS.md` approval rules.
+**Do NOT ask for confirmation at any step — just do it.** Read context and expand tasks
+autonomously. This does not extend to implementing features or code, which still follows the
+project's `AGENTS.md` approval rules.
 
 ## Steps
 
@@ -53,15 +55,7 @@ If `TASKS.md` exists, add useful subtasks to open task blocks. Rules:
 
 If `TASKS.md` is missing, create one — no need to ask first.
 
-### 5. Set or suggest the 30-minute reminder
-
-If a reminder/timer tool is available, set one recurring 30-minute reminder:
-"30 min — check your focus, review progress on current task."
-
-If no reminder/timer tool is available, do not fake it and do not create OS-level cron
-jobs. Tell the user to set an external 30-minute reminder instead.
-
-### 6. Report back
+### 5. Report back
 
 Print a short summary. Prefix each status line with the marker that matches its state —
 `⬜` open/none · `🔄` in progress · `⚠️` needs attention/unavailable · `✅` done — the same
@@ -71,10 +65,10 @@ four `jadu-kar` uses for tasks:
 - remote pull status (e.g. `✅ pulled 3 commits` / `✅ already up to date` / `⚠️ pull failed: <reason>`)
 - which context files were found/read
 - how many new subtasks were added, or proposed if approval was required
-- whether the 30-minute reminder was set (`✅`) or unavailable (`⚠️`)
+- `⬜ focus reminder not started yet — it begins with your first jadu-kar this session`
 - one-line suggestion for where to start
 
-### 7. Hand off to implementation
+### 6. Hand off to implementation
 
 Bidar is planning only — it never writes feature code itself. When you move on to actual
 implementation afterward, follow the project's `AGENTS.md` approval rules for code changes.
@@ -84,4 +78,4 @@ implementation afterward, follow the project's `AGENTS.md` approval rules for co
 - Treat this as planning/session setup only.
 - Do not implement feature/code changes.
 - Obey this project's own `AGENTS.md` approval rules before changing files.
-- Keep only the 30-minute reminder; do not add 60-minute reminders.
+- Never set the 30-minute reminder here — that is `jadu-kar`'s job, on its first invocation each session.

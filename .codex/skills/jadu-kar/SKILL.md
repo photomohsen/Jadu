@@ -1,11 +1,25 @@
 ---
 name: jadu-kar
-description: Conversational task manager for Jadu. Use when the user invokes jadu-kar, or wants to add, update, complete, list, review, reprioritize, or reschedule tasks in TASKS.md. Never asks the user to edit the file directly.
+description: Conversational task manager for Jadu. Use when the user invokes jadu-kar, or wants to add, update, complete, list, review, reprioritize, or reschedule tasks in TASKS.md. Never asks the user to edit the file directly. Also sets the 30-minute focus reminder on its first invocation each session - jadu-bidar no longer does this.
 ---
 
 # Jadu Kar - Task Manager
 
 Manages `TASKS.md` through conversation. Never asks the user to edit the file directly.
+
+## Set the focus reminder (first invocation only)
+
+The 30-minute reminder starts here, not at jadu-bidar - waking up and reading context is
+not work yet; jadu-kar is where real work begins.
+
+- If no 30-minute focus reminder is active yet this session, set one now: if a
+  reminder/timer tool is available, set one recurring 30-minute reminder ("30 min - check
+  your focus, review progress on current task"). If no reminder/timer tool is available, do
+  not fake it and do not create OS-level cron jobs; tell the user once to set an external
+  30-minute reminder.
+- If a reminder is already active this session (set by an earlier jadu-kar call), skip
+  silently - never stack a second recurring reminder.
+- Do this before handling whichever mode (A/B/C/D) applies below.
 
 ## File format
 

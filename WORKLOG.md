@@ -1,5 +1,41 @@
 # Worklog
 
+## 2026-07-18 — Move the focus reminder to Kar; make Payan's restart line unconditional
+
+### What we built
+
+| Feature | Files |
+|---|---|
+| Reminder ownership moved from Bidar to Kar (first invocation each session, guarded against stacking) | `jadu-bidar.md`, `jadu-kar.md`, both `.codex/skills/` mirrors |
+| Payan's session-close line made unconditional (`Session closed. Now run /clear, then start the next session with /jadu-bidar.`) | `jadu-payan.md`, Codex mirror |
+| Cross-reference updates | `AGENTS.md`, `CLAUDE.md`, `README.md`, `PROJECT.md`, Codex frontmatter descriptions |
+
+### Decisions
+
+#### 1. Reminder starts with work (Kar), not with waking up (Bidar)
+**Why:** the owner asked for this directly — reading context at session start isn't the
+part worth timeboxing; actual task work is.
+**How:** removed the reminder step from Bidar entirely (in both this repo and the hub fork);
+added a "first invocation only" reminder step to Kar, guarded so a second `jadu-kar` call in
+the same session never stacks a duplicate recurring job. Bidar's report now states the
+reminder hasn't started yet rather than claiming to set it.
+
+#### 2. Payan's closing instruction is stated as fact, not a suggestion — with the limitation disclosed
+**Why:** the owner asked that `/clear` + `/jadu-bidar` always happen after `jadu-payan`.
+No tool available to Payan can actually clear a conversation or start a new one — those are
+client-level actions, not something a skill's instructions can trigger. The honest fix is to
+make the *instruction* to the user unconditional and unambiguous, not to pretend the agent
+can perform the action itself.
+**How:** replaced the old conditional "if staying in this tab, consider clearing..." line
+with an unconditional one in both this repo and the hub fork, and added an explicit rule
+against softening it back into a suggestion.
+
+### Pending / TODO
+
+- [ ] Dry-run the copy-paste install prompt in a fresh Claude Code and Codex session (carried over)
+
+---
+
 ## 2026-07-18 — Converge with the private hub fork after a 3-way audit
 
 ### What we built

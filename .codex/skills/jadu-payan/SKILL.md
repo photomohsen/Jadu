@@ -123,10 +123,11 @@ Archive when `TASKS.md` exceeds 200 lines (Origin Jadu's threshold):
 
 ### 6. Cancel the session's focus reminder
 
-If `jadu-bidar` set a 30-minute focus reminder this session, cancel it now.
+If `jadu-kar` set a 30-minute focus reminder this session (Kar sets it on its first
+invocation, not Bidar), cancel it now.
 
-- If a timer-management tool is available, cancel the recurring 30-minute job Bidar created.
-- If no timer tool is available, or no reminder was set this session, skip silently.
+- If a timer-management tool is available, cancel the recurring 30-minute job Kar created.
+- If no timer tool is available, or no reminder was set this session (for example the session closed before any `jadu-kar` call), skip silently.
 - If the user set an external reminder instead, remind them once to clear it themselves.
 
 ### 7. Commit and push
@@ -154,6 +155,11 @@ what was skipped and why, whether archiving ran (WORKLOG and/or TASKS), whether 
 session's 30-minute focus reminder was cancelled, the commit hash, and whether push
 succeeded.
 
+Then print exactly, every time: `Session closed. Now run /clear, then start the next
+session with /jadu-bidar.` This cannot be triggered automatically - there is no tool
+available to Payan that clears the conversation or starts a new one; the user has to run
+both themselves. Do not soften this into "consider" or "if you would like."
+
 ## Rules
 
 - Use the session brief as the source of truth.
@@ -163,4 +169,5 @@ succeeded.
 - Payan includes the push workflow: stage only session-touched files (never `git add -A`), run the repo secret scan when present, commit, and push.
 - Always fetch and attempt a fast-forward pull immediately before pushing. Never force-push and never auto-merge/rebase past a real divergence - report and stop instead.
 - Archive `TASKS.md` past 200 lines into `TASKS_ARCHIVE.md` the same way `WORKLOG.md` archives past 250 lines/8 entries - move only fully-closed blocks, never open or partial ones.
-- Cancel any 30-minute focus reminder `jadu-bidar` set - it must not fire after the session is closed.
+- Cancel any 30-minute focus reminder `jadu-kar` set - it must not fire after the session is closed.
+- Always close by directing the user to run `/clear` then `/jadu-bidar` - stated as a fact, not a suggestion.
