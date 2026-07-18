@@ -1,5 +1,51 @@
 # Worklog
 
+## 2026-07-18 — Add `jadu-bina` as the public reviewer loop
+
+### What we built
+
+| Feature | Files |
+|---|---|
+| New Claude Code reviewer command | `.claude/commands/jadu-bina.md` |
+| New Codex reviewer skill with rubric + UI metadata | `.codex/skills/jadu-bina/SKILL.md`, `references/review-rubric.md`, `agents/openai.yaml` |
+| Public repo docs updated to explain Bina | `README.md`, `CHANGELOG.md`, `TASKS.md` |
+
+### Decisions
+
+#### 1. Keep Jadu's main session loop unchanged, and add Bina as an explicit reviewer loop
+**Why:** the owner asked to rename the earlier reviewer concept from `jadu-nazer` to
+`jadu-bina`, but not to replace the five core workflows or distort their order. The clean
+model is still `Zad -> Bidar -> Kar -> Payan -> Push`, with `Bina` as the explicit QA loop
+invoked when review is needed.
+**How:** added Bina to the repo as a sixth, optional skill and updated README wording from
+"five small skills" to "five core workflow skills plus one review loop skill."
+
+#### 2. Ship Bina on both agent surfaces, not just Codex
+**Why:** this repo's promise is agent-agnostic parity. Shipping only a Codex skill would
+leave Claude Code behind and reintroduce the drift the project tries to avoid.
+**How:** added both `.claude/commands/jadu-bina.md` and `.codex/skills/jadu-bina/`.
+
+#### 3. Make the reviewer skill task-ledger-first
+**Why:** the owner's requirement for Nazer/Bina was not just "review the work"; it was
+"review, create tasks, send the executor back, and keep looping until satisfied." That only
+works if the reviewer writes findings into the real Jadu records rather than leaving them as
+chat-only commentary.
+**How:** Bina's instructions explicitly require reading `TASKS.md` first, logging confirmed
+findings as actionable tasks or subtasks, then re-checking the updated artifact itself.
+
+### Verification
+
+- Validated the public Codex skill with `skill-creator/scripts/quick_validate.py`.
+- Validated the renamed installed global skill at `~/.codex/skills/jadu-bina`.
+- Scanned the public repo for stale `jadu-nazer` references after the rename-related update;
+  no public-repo leftovers remained.
+- Re-checked the mirrored surfaces and docs for naming consistency before push.
+
+### Pending / TODO
+
+- [ ] Verify the copy-paste install prompt actually works end-to-end in a clean Claude Code session (carried over)
+- [ ] Verify the copy-paste install prompt actually works end-to-end in a clean Codex session (carried over)
+
 ## 2026-07-18 — Move the focus reminder to Kar; make Payan's restart line unconditional
 
 ### What we built

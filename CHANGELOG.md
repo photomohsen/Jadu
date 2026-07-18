@@ -3,6 +3,17 @@
 All notable changes to the public Jadu repo. Newest first. This project uses simple,
 date-stamped version tags (no strict semver — it's a docs/skills collection).
 
+## [0.7.0] — 2026-07-18
+
+- Added **Bina** as Jadu's explicit reviewer loop on both agent surfaces:
+  `.claude/commands/jadu-bina.md` and `.codex/skills/jadu-bina/`.
+- Bina's job is to review active work independently, log confirmed findings into Jadu task
+  records, hand concrete fixes back to the executor, and keep the loop going until no
+  material issues remain or a real blocker needs a user decision.
+- Added the Codex-side reviewer rubric reference and UI metadata for `jadu-bina`.
+- Updated the README to describe Jadu as five core workflow skills plus the optional Bina
+  reviewer loop skill.
+
 ## [0.6.0] — 2026-07-18
 
 - **Focus reminder moved from Bidar to Kar.** The 30-minute reminder now starts on `jadu-kar`'s

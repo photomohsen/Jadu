@@ -3,7 +3,8 @@
 ### Numbered task index
 
 1. **[P1] 🔄 Publish the public GitHub repo — due: TBD (2/4)**
-2. **[P3] ⬜ Nice-to-haves (0/3)**
+2. **[P1] ✅ Add `jadu-bina` reviewer loop to the public repo — due: 2026-07-18 (4/4)**
+3. **[P3] ⬜ Nice-to-haves (0/3)**
 
 ## [P1] 🔄 Publish the public GitHub repo — due: TBD
 **Goal:** `https://github.com/photomohsen/Jadu` exists, public, with this content pushed as the initial commit.
@@ -12,13 +13,14 @@
 - [ ] Verify the copy-paste install prompt actually works end-to-end in a clean Claude Code session
 - [ ] Verify the copy-paste install prompt actually works end-to-end in a clean Codex session
 
-## [P3] ⬜ Nice-to-haves
-**Goal:** polish once the base repo is live and used a few times.
-- [ ] Add `README.fa.md` (Farsi translation), matching upstream's bilingual pattern
-- [ ] Add a short CONTRIBUTING.md if external PRs start coming in
-- [ ] Consider a GitHub Actions check that Claude/Codex command pairs haven't drifted
-
 ## Done
+
+## [P1] ✅ Add `jadu-bina` reviewer loop to the public repo — due: 2026-07-18
+**Goal:** the public Jadu repo includes an explicit reviewer skill on both Claude Code and Codex surfaces, with docs and QA records that explain how the loop works.
+- [x] Add `.claude/commands/jadu-bina.md`
+- [x] Add `.codex/skills/jadu-bina/` with `SKILL.md`, `references/review-rubric.md`, and `agents/openai.yaml`
+- [x] Update public docs/changelog to describe `jadu-bina`
+- [x] Run QA on the repo copy, validate the skill, and clear naming/doc consistency before push
 
 - [x] ✅ **Converge with the private hub-customized fork — completed 2026-07-18.** After a
   side-by-side audit against both the hub fork and upstream 25mordad/Jadu: Payan and Push no
@@ -38,3 +40,9 @@
   this cannot be automated, it still needs the user's own keystroke. Updated every
   cross-reference (`AGENTS.md`, `CLAUDE.md`, `README.md`, `PROJECT.md`, Codex frontmatter).
   See `CHANGELOG.md` [0.6.0].
+
+## [P3] ⬜ Nice-to-haves
+**Goal:** polish once the base repo is live and used a few times.
+- [ ] Add `README.fa.md` (Farsi translation), matching upstream's bilingual pattern
+- [ ] Add a short CONTRIBUTING.md if external PRs start coming in
+- [ ] Consider a GitHub Actions check that Claude/Codex command pairs haven't drifted

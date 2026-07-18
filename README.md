@@ -1,9 +1,10 @@
 # Jadu (جادو)
 
-**Jadu** (جادو) is Persian for "magic." It's five small AI-agent workflow skills that keep
-a coding session structured: start with context, work through tasks, close with a clean
-record, and push only when the workflow or user request explicitly calls for it. Works the
-same in **Claude Code** and **Codex**.
+**Jadu** (جادو) is Persian for "magic." It's five core AI-agent workflow skills plus one
+review loop skill that keep a coding session structured: start with context, work through
+tasks, review until the work is actually ready, close with a clean record, and push only
+when the workflow or user request explicitly calls for it. Works the same in **Claude Code**
+and **Codex**.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -25,6 +26,12 @@ agent, in any project, on any machine, picks up exactly where the last session l
 | **Push** | — | push (English) | `/jadu-push` · `jadu-push` | Commit and push without a full session close |
 
 Command shows **Claude Code** (`/jadu-…`) · **Codex** (`jadu-…`, no leading slash).
+
+Optional reviewer loop:
+
+| Workflow | Persian | Meaning | Command | What it does |
+|---|---|---|---|---|
+| **Bina** | بینا | seeing / observant | `/jadu-bina` · `jadu-bina` | Review active work, turn confirmed findings into tasks, and keep the QA loop going until the artifact is actually ready |
 
 ---
 
@@ -171,7 +178,7 @@ session — that part needs your own keystroke; no skill can trigger it for you.
 
 ## What each skill actually reads and writes
 
-All five skills work on files in the current project's root — no special folder
+All six skills work on files in the current project's root — no special folder
 structure required:
 
 - `AGENTS.md` — the shared, agent-agnostic guide every agent reads first
@@ -187,7 +194,7 @@ agent reads and edits like any other file in your repo.
 
 ## Optional: project secrets (`.env`)
 
-**Jadu itself needs no secrets** — none of the five skills read a token or key. But if
+**Jadu itself needs no secrets** — none of the six skills read a token or key. But if
 *your project* uses API keys or credentials, the repo ships an optional
 [`.env.example`](.env.example) as a starting point:
 

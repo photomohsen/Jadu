@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jadu Bina"
+  short_description: "Jadu QA loop and reviewer handoff"
+  default_prompt: "Review the current Jadu work, turn confirmed issues into actionable tasks for the executor, and keep the loop going until the output is ready."
