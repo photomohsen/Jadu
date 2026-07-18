@@ -122,8 +122,10 @@ urgent), `P2` (current phase), `P3` (backlog).
 
 ### 6. Report back
 
-Print a short summary: files created or updated, one sentence per file describing its
-contents, and assumptions made for any skipped answers.
+Print a short summary. Prefix each line with the marker that matches its state - `✅`
+created/updated, `⬜` skipped/not requested, `⚠️` needs the user's decision: files created
+or updated, one sentence per file describing its contents, and assumptions made for any
+skipped answers.
 
 ## Rules
 

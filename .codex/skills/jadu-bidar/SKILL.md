@@ -71,6 +71,7 @@ If `TASKS.md` exists, add useful subtasks to open task blocks. Rules:
 - Keep each new item one line, prefixed with `- [ ]`.
 - Add subtasks under relevant existing task blocks; do not create new top-level tasks unless the user asked.
 - Do not remove, check off, or re-prioritize existing items.
+- Leave each task's status marker as-is - `⬜` open · `🔄` handled · `⚠️` needs attention · `✅` done (defined in `jadu-kar`); adding subtasks never changes it, and a new top-level task (only when the user asked) defaults to `⬜`.
 
 If `TASKS.md` is missing, create one - no need to ask first.
 
@@ -85,13 +86,15 @@ jobs. Tell the user to set an external 30-minute reminder.
 
 ### 5. Report back
 
-Print a short summary:
+Print a short summary. Prefix each status line with the marker that matches its state -
+`⬜` open/none, `🔄` in progress, `⚠️` needs attention/unavailable, `✅` done - the same four
+`jadu-kar` uses for tasks:
 
 - current time snapshot
-- remote pull status
+- remote pull status (for example `✅ pulled 3 commits`, `✅ already up to date`, `⚠️ pull failed: <reason>`)
 - which context files were found and read
 - how many new subtasks were added, or proposed if approval was required
-- whether the 30-minute reminder was set or unavailable
+- whether the 30-minute reminder was set (`✅`) or unavailable (`⚠️`)
 - one-line suggestion for where to start
 
 ### 6. Hand off to implementation

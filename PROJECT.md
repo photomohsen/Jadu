@@ -30,7 +30,8 @@ push only when explicitly asked (Push). Public, MIT-licensed, forked and general
 | Milestone | Target Date |
 |---|---|
 | Generalized from private hub-customized version | 2026-07-14 |
-| First public release | TBD — pending GitHub repo creation |
+| First public release — live at [github.com/photomohsen/Jadu](https://github.com/photomohsen/Jadu) | 2026-07-14 |
+| Converged with the private hub version: precise git staging (no `git add -A`), pre-push fetch+ff-only safety, `TASKS.md` archiving, numbered task index in Kar, universal status icons in every skill's reports | 2026-07-18 |
 
 ## Conventions
 

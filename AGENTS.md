@@ -28,6 +28,7 @@ for Codex. No build step, no dependencies.
 6. Do not make decisions on the user's behalf. When something is ambiguous, ask.
 7. Never run `git push` unless the user explicitly asks.
 8. Whenever a Claude Code command changes behavior, mirror the same change into its Codex counterpart in the same turn — the two must never drift apart.
+9. When `jadu-payan` or `jadu-push` do push, stage only the files that session actually touched (never `git add -A`), and fetch + attempt a fast-forward pull immediately before pushing — report and stop on real divergence rather than forcing or auto-merging.
 
 ## Things agents should never do in this project
 
@@ -36,3 +37,4 @@ for Codex. No build step, no dependencies.
   fork/extension, not a change to the base skills here.
 - Never add a 60-minute reminder variant.
 - Never push without an explicit ask.
+- Never stage with `git add -A` in `jadu-payan` or `jadu-push` — session-touched files only.

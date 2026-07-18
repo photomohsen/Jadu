@@ -133,8 +133,10 @@ Pre-populate tasks from milestones and next steps using checkboxes:
 
 ## Step 7 — Report back
 
-Print a short summary: files created/updated, one sentence per file describing its
-contents, and assumptions made for any skipped answers.
+Print a short summary. Prefix each line with the marker that matches its state — `✅`
+created/updated · `⬜` skipped/not requested · `⚠️` needs the user's decision: files
+created/updated, one sentence per file describing its contents, and assumptions made for
+any skipped answers.
 
 ## Rules
 
