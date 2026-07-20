@@ -3,6 +3,57 @@
 All notable changes to the public Jadu repo. Newest first. This project uses simple,
 date-stamped version tags (no strict semver — it's a docs/skills collection).
 
+## [0.8.0] — 2026-07-20
+
+Session-behavior redesign, driven by real usage friction: tasks getting created and
+forgotten mid-session, task-doc formatting inconsistency, hard-to-verify commit/push
+success, and inconsistent status-icon reporting. Grounded in a live fetch of upstream
+[25mordad/Jadu](https://github.com/25mordad/Jadu)'s current files, a direct read of this
+repo's own prior skills, and a friction-mining pass over real session history. Applies to
+Claude Code and Codex identically.
+
+- **Bidar absorbs Kar.** Starting a session and managing `TASKS.md` are one skill now —
+  `jadu-bidar`. First call each session does setup (pull, read context, expand tasks,
+  start the reminder); every call, first or not, also renders the live backlog as a table
+  and handles add/update/list/reprioritize. `jadu-kar` is kept as a thin redirect stub on
+  both agent surfaces, not deleted, so existing habit doesn't hit a dead end.
+- **Ambient task logging.** Any prompt describing real work becomes a task in `TASKS.md`
+  immediately — no more waiting for an explicit task-add or for `jadu-payan` to catch up at
+  close. Read-only questions and lookups never become tasks.
+- **New: Bazgu (بازگو — "retell").** `jadu-bazgu` is a per-request, on-demand skill: log
+  the request as a task, restate the understood scope back (a statement, not a question),
+  offer 2–3 concrete options instead of just the literal ask, wait for explicit
+  confirmation, then execute. Not a session-wide mode — the next prompt without it goes
+  back to ambient logging and direct execution.
+- **Payan is now unambiguously terminal.** Stated plainly in the skill itself: Payan never
+  ends with a question, a "Need from you" section, or anything requiring a reply — it runs
+  brief → docs → commit → push → report, then stops.
+- **Rigid commit/push confirmation.** Both Payan and Push now report a fixed-format line —
+  `✅ Committed <hash> to <branch>, pushed to <remote>/<branch> — N files left unstaged`, or
+  a clear `⚠️ NOT pushed: <reason>` — plus the direct commit URL, so success is
+  independently checkable instead of just asserted.
+- **`git add -A` gets one explicit, opt-in escape hatch.** Still banned by default in Payan
+  and Push — staging stays session-scoped. But if the user's own message for a given push
+  explicitly says something like "stage everything," that one call runs a real
+  `git add -A`. Never triggered by anything softer, never the default.
+- **Payan: mandatory decisions/preferences self-check.** Before writing the session brief,
+  Payan now runs an internal check — what got decided this session and why; did anything
+  happen that should change future behavior — instead of a self-assessed field that's easy
+  to leave thin.
+- **Payan: cross-doc date-drift flag.** When updating `TASKS.md`, Payan compares completion
+  dates against `PROJECT.md`'s own dates for the same milestone and flags a mismatch in its
+  report — flag only, never auto-fixed.
+- **Payan: conditional `README.md` refresh**, adopted from upstream — when a session
+  changes architecture, setup, or CLI-facing behavior, Payan refreshes the relevant part of
+  `README.md` too, not just `WORKLOG.md`/`TASKS.md`/`AGENTS.md`.
+- **Zad: closing context-compaction nudge**, also adopted from upstream — after a long
+  setup conversation, Zad now suggests compacting/summarizing before moving on.
+- **Bina: explicit completion-gate language**, no behavioral change — states plainly what
+  was already true: a task counts as done when Bina is satisfied, not when the executor
+  says so. "Close enough" was already not an exit condition; now it says so up front.
+- Task listings render as a table (`# · Priority · Status · Description`) everywhere tasks
+  get shown, not just inside `TASKS.md`'s own format.
+
 ## [0.7.0] — 2026-07-18
 
 - Added **Bina** as Jadu's explicit reviewer loop on both agent surfaces:

@@ -5,7 +5,12 @@ description: Review active Jadu work as an independent QA and reviewer loop. Use
 
 # Jadu Bina
 
-Act as the reviewer inside a Jadu execution loop.
+Act as the reviewer inside a Jadu execution loop. On-demand only - invoked when the user
+asks, not automatic on every ambient task `jadu-bidar` logs.
+
+A task's completion depends on this loop's satisfaction, not the executor's own say-so. The
+executor does not get to mark something "done" and move to the next step; bina does, by
+being genuinely satisfied - see Exit conditions below.
 
 Your job is not to be nice to the artifact. Your job is to help the work become
 ready.
@@ -25,7 +30,7 @@ Do not stop at "looks good" if you have not actually checked the artifact.
 
 ### Step 1 - Resolve the review scope
 
-- Reuse the current Jadu project or subproject scope if `jadu-bidar` or `jadu-kar` already resolved it.
+- Reuse the current Jadu project scope if `jadu-bidar` already resolved it.
 - If the scope is not explicit, identify the one active project the work belongs to before reviewing.
 - Read the current `TASKS.md` first so your findings land in the real ledger rather than floating only in chat.
 - When relevant, also read `PROJECT.md`, `WORKLOG.md`, and the current artifact files the executor changed.

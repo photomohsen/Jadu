@@ -138,6 +138,9 @@ created/updated · `⬜` skipped/not requested · `⚠️` needs the user's deci
 created/updated, one sentence per file describing its contents, and assumptions made for
 any skipped answers.
 
+Before finishing, suggest the user compact or summarize the conversation if it's grown
+long — this setup Q&A tends to run long relative to what's needed afterward.
+
 ## Rules
 
 - Ask all setup questions in one message.

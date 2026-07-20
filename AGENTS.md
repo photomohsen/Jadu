@@ -2,8 +2,9 @@
 
 ## What this project is
 
-Jadu itself — the five workflow skills in this repo (`jadu-zad`, `jadu-bidar`, `jadu-kar`,
-`jadu-payan`, `jadu-push`). This project manages itself using its own workflows.
+Jadu itself — the five core workflow skills in this repo (`jadu-zad`, `jadu-bidar`,
+`jadu-bazgu`, `jadu-payan`, `jadu-push`) plus the optional `jadu-bina` reviewer loop. This
+project manages itself using its own workflows.
 
 ## Tools & setup
 
@@ -13,10 +14,16 @@ for Codex. No build step, no dependencies.
 ## Key commands / workflows
 
 - `jadu-zad` / `/jadu-zad` — set up or refresh this repo's own context files
-- `jadu-bidar` / `/jadu-bidar` — start a session on this repo
-- `jadu-kar` / `/jadu-kar` — manage `TASKS.md`
-- `jadu-payan` / `/jadu-payan` — close a session, update `WORKLOG.md`/`TASKS.md`
+- `jadu-bidar` / `/jadu-bidar` — start a session on this repo; also manages `TASKS.md` as a
+  live table for the rest of the session (merged from the former `jadu-kar`, which is now a
+  redirect stub)
+- `jadu-bazgu` / `/jadu-bazgu` — for one request: log it as a task, restate it, offer
+  options, confirm, then execute
+- `jadu-payan` / `/jadu-payan` — close a session, update `WORKLOG.md`/`TASKS.md`; never ends
+  with a question
 - `jadu-push` / `/jadu-push` — commit and push, only when asked
+- `jadu-bina` / `/jadu-bina` — optional reviewer loop; a task counts as done when Bina is
+  satisfied, not when the executor says so
 
 ## Conventions agents should follow
 

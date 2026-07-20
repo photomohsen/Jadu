@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jadu Bazgu"
+  short_description: "Backbrief, options, and confirm before running"
+  default_prompt: "Use $jadu-bazgu to restate my request, offer options, and confirm before executing."

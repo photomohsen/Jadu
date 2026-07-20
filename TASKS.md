@@ -5,6 +5,17 @@
 1. **[P1] 🔄 Publish the public GitHub repo — due: TBD (2/4)**
 2. **[P1] ✅ Add `jadu-bina` reviewer loop to the public repo — due: 2026-07-18 (4/4)**
 3. **[P3] ⬜ Nice-to-haves (0/3)**
+4. **[P1] 🔄 Session-behavior redesign (v0.8.0) — due: TBD (3/5)**
+
+## [P1] 🔄 Session-behavior redesign (v0.8.0) — due: TBD
+**Goal:** ship the v0.8.0 changes described in `CHANGELOG.md` — Bidar+Kar merge, ambient
+task logging, Bazgu, hardened Payan/Push, Zad/Bina additions — across both agent surfaces,
+QA'd, and pushed.
+- [x] Research: live upstream fetch, direct read of this repo's prior skills, friction-mining pass over real session history
+- [x] Write all 7 skills, both agent surfaces (Claude Code + Codex, including `agents/openai.yaml` for new skills)
+- [x] Update `README.md`, `CHANGELOG.md`, `TASKS.md`, `WORKLOG.md`
+- [ ] Independent QA pass on all 14 skill files before pushing
+- [ ] Push to `github.com/photomohsen/Jadu` — own explicit go-ahead, not implied by earlier approvals
 
 ## [P1] 🔄 Publish the public GitHub repo — due: TBD
 **Goal:** `https://github.com/photomohsen/Jadu` exists, public, with this content pushed as the initial commit.

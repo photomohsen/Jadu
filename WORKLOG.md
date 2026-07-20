@@ -1,5 +1,74 @@
 # Worklog
 
+## 2026-07-20 — Session-behavior redesign (v0.8.0): Bidar+Kar merge, Bazgu, hardened Payan/Push
+
+### What we built
+
+| Feature | Files |
+|---|---|
+| Bidar absorbs Kar into one command; ambient task logging; task tables everywhere | `.claude/commands/jadu-bidar.md`, `.codex/skills/jadu-bidar/` |
+| `jadu-kar` redirect stub (not deleted) | `.claude/commands/jadu-kar.md`, `.codex/skills/jadu-kar/` |
+| New: Bazgu — per-request backbrief + options + confirm | `.claude/commands/jadu-bazgu.md`, `.codex/skills/jadu-bazgu/` (new, incl. `agents/openai.yaml`) |
+| Payan hardened: mandatory decisions/preferences self-check, cross-doc date-drift flag, conditional README refresh, rigid commit-confirmation line + URL, explicit opt-in `git add -A` escape hatch, non-negotiable no-questions rule stated in-skill | `.claude/commands/jadu-payan.md`, `.codex/skills/jadu-payan/` |
+| Push hardened: same rigid confirmation line + escape hatch | `.claude/commands/jadu-push.md`, `.codex/skills/jadu-push/` |
+| Zad: closing context-compaction nudge (adopted from upstream) | `.claude/commands/jadu-zad.md`, `.codex/skills/jadu-zad/` |
+| Bina: explicit completion-gate language, no behavior change | `.claude/commands/jadu-bina.md`, `.codex/skills/jadu-bina/` |
+| Docs updated to match | `README.md`, `CHANGELOG.md` [0.8.0], `TASKS.md` |
+
+### Decisions
+
+#### 1. Merge Bidar and Kar
+**Why:** two commands to remember for "start" and "manage tasks" was real friction in
+practice, and Kar already silently depended on Bidar having resolved the project first.
+**How:** `jadu-bidar` does first-call setup and, every call, also shows/manages the live
+backlog. `jadu-kar` becomes a redirect stub rather than being deleted outright, so a user
+typing it from habit gets pointed at the right place instead of a dead end.
+
+#### 2. Ambient task logging instead of waiting for Payan
+**Why:** the recurring real-world failure mode was tasks getting created in conversation
+and then forgotten — nothing captured them until an explicit task-add or session close.
+**How:** any actionable prompt writes to `TASKS.md` immediately; read-only questions and
+lookups never do.
+
+#### 3. Soften, not remove, the `git add -A` ban
+**Why:** session-scoped staging is the right default (a real incident showed why), but a
+fully rigid ban ignored that a whole-repo add is sometimes genuinely the simplest, safest
+option in a single-repo context — and this repo is single-repo by design.
+**How:** stays banned by default; one explicit, verbatim opt-in phrase triggers a real
+`git add -A` for that call only.
+
+#### 4. Payan states its no-questions rule in its own text, not just in practice
+**Why:** "Payan means end" is easy to erode silently over time if it is only ever an
+implicit convention rather than something the skill says about itself.
+**How:** added the rule directly to `jadu-payan.md`/`SKILL.md`, and removed the one
+existing soft spot (a permission-classifier-blocked-push fallback that used to ask) so it
+now reports and stops like every other failure mode.
+
+#### 5. Bazgu is on-demand, not the new default for every prompt
+**Why:** giving every single prompt the full restate+options+confirm treatment would be
+heavier than most requests warrant; ambient logging already covers "don't lose track of
+things."
+**How:** `jadu-bazgu` is invoked per-request; without it, `jadu-bidar`'s ambient logging and
+direct execution stay the default.
+
+### Verification
+
+- Read this repo's own prior skill files fresh immediately before rewriting each one, to
+  avoid silently reverting anything already-correct.
+- Compared new content against a live fetch of upstream 25mordad/Jadu's current files for
+  the 2 items adopted from there (Zad's compaction nudge, Payan's conditional README
+  refresh) — confirmed both are genuinely upstream behavior, not invented.
+- Confirmed the two changed agent surfaces stay behaviorally identical: same steps, same
+  rules, only format conventions differ (Codex's numbered-workflow style vs. Claude Code's
+  heading style).
+
+### Pending / TODO
+
+- [ ] Independent QA pass on all 14 changed/new files before pushing
+- [ ] Push to `github.com/photomohsen/Jadu` as v0.8.0 — its own explicit go-ahead
+
+---
+
 ## 2026-07-18 — Add `jadu-bina` as the public reviewer loop
 
 ### What we built

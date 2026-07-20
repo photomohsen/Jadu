@@ -1,4 +1,4 @@
 interface:
   display_name: "Jadu Bidar"
-  short_description: "Start sessions with context and focus"
-  default_prompt: "Use $jadu-bidar to start this project session and suggest the next focus."
+  short_description: "Start sessions, manage tasks, keep focus"
+  default_prompt: "Use $jadu-bidar to start this project session, show the task backlog, and suggest the next focus."

@@ -1,6 +1,6 @@
 ---
 name: jadu-zad
-description: Project initialization wizard for Jadu. Use when the user invokes jadu-zad, starts a new project, or wants context files (PROJECT.md, AGENTS.md, TASKS.md, optional CLAUDE.md/WORKLOG.md) set up or refreshed for the current project. Asks setup questions once, then writes the files after approval.
+description: Project initialization wizard for Jadu. Use when the user invokes jadu-zad, starts a new project, or wants context files (PROJECT.md, AGENTS.md, TASKS.md, optional CLAUDE.md/WORKLOG.md) set up or refreshed for the current project. Asks setup questions once, then writes the files after approval, then suggests compacting the conversation.
 ---
 
 # Jadu Zad - Project Initialization Wizard
@@ -126,6 +126,9 @@ Print a short summary. Prefix each line with the marker that matches its state -
 created/updated, `⬜` skipped/not requested, `⚠️` needs the user's decision: files created
 or updated, one sentence per file describing its contents, and assumptions made for any
 skipped answers.
+
+Before finishing, suggest the user compact or summarize the conversation if it has grown
+long - this setup Q&A tends to run long relative to what is needed afterward.
 
 ## Rules
 

@@ -14,15 +14,16 @@ Based on the original [25mordad/Jadu](https://github.com/25mordad/Jadu) by Bahma
 
 ## The idea in one sentence
 
-Every session follows the same loop — **Zad → Bidar → Kar → Payan → Push** — so any
-agent, in any project, on any machine, picks up exactly where the last session left off.
+Every session follows the same loop — **Zad → Bidar → Payan → Push**, with **Bazgu**
+available any time you want a request restated and confirmed first — so any agent, in any
+project, on any machine, picks up exactly where the last session left off.
 
 | Workflow | Persian | Meaning | Command | What it does |
 |---|---|---|---|---|
 | **Zad** | زاد | born | `/jadu-zad` · `jadu-zad` | Ask setup questions once, write `PROJECT.md` / `AGENTS.md` / `TASKS.md` |
-| **Bidar** | بیدار | wake up | `/jadu-bidar` · `jadu-bidar` | Start a session — read context, pull latest, expand tasks (no reminder yet) |
-| **Kar** | کار | work | `/jadu-kar` · `jadu-kar` | Manage `TASKS.md` through conversation — add, update, complete, review; starts the 30-min focus reminder on its first call each session |
-| **Payan** | پایان | end | `/jadu-payan` · `jadu-payan` | Close a session — write a brief, update docs/tasks, commit and push, then tell you to `/clear` and run `/jadu-bidar` next |
+| **Bidar** | بیدار | wake up | `/jadu-bidar` · `jadu-bidar` | Start a session — read context, pull latest, expand tasks — and manage `TASKS.md` as a live table for the rest of the session (add, update, complete, reprioritize); starts the 30-min focus reminder on its first call |
+| **Bazgu** | بازگو | retell | `/jadu-bazgu` · `jadu-bazgu` | For one specific request: log it as a task, restate it back, offer 2–3 options, wait for confirmation, then execute — on demand, not a standing mode |
+| **Payan** | پایان | end | `/jadu-payan` · `jadu-payan` | Close a session — write a brief, update docs/tasks, commit and push, then tell you to `/clear` and run `/jadu-bidar` next. Never ends with a question. |
 | **Push** | — | push (English) | `/jadu-push` · `jadu-push` | Commit and push without a full session close |
 
 Command shows **Claude Code** (`/jadu-…`) · **Codex** (`jadu-…`, no leading slash).
@@ -31,7 +32,11 @@ Optional reviewer loop:
 
 | Workflow | Persian | Meaning | Command | What it does |
 |---|---|---|---|---|
-| **Bina** | بینا | seeing / observant | `/jadu-bina` · `jadu-bina` | Review active work, turn confirmed findings into tasks, and keep the QA loop going until the artifact is actually ready |
+| **Bina** | بینا | seeing / observant | `/jadu-bina` · `jadu-bina` | Review active work, turn confirmed findings into tasks, and keep the QA loop going until the artifact is actually ready. A task counts as done when Bina is satisfied, not when the executor says so. |
+
+`Kar` (task management) is no longer a separate command — it merged into `Bidar`. A
+`jadu-kar` stub still exists on both agent surfaces so old habit doesn't hit a dead end; it
+just points at `jadu-bidar`.
 
 ---
 
@@ -81,8 +86,8 @@ mkdir -p ~/.claude/commands
 cp Jadu/.claude/commands/jadu-*.md ~/.claude/commands/
 ```
 
-They become available as slash commands: `/jadu-bidar`, `/jadu-zad`, `/jadu-kar`,
-`/jadu-payan`, `/jadu-push`.
+They become available as slash commands: `/jadu-bidar`, `/jadu-zad`, `/jadu-bazgu`,
+`/jadu-payan`, `/jadu-push`, `/jadu-bina`.
 
 **Codex** — copy the skill folders globally:
 
@@ -160,31 +165,39 @@ There are two separate, agent-agnostic things to keep in mind:
 ## Typical session
 
 ```
-jadu-zad     (once)   → initialize this project's context files
-jadu-bidar   (start)  → read context, pull latest, expand tasks (no reminder yet)
-jadu-kar     (as needed) → add/update tasks — the 30-min focus reminder starts here
+jadu-zad      (once)     → initialize this project's context files
+jadu-bidar    (start)    → read context, pull latest, expand tasks (no reminder yet)
+jadu-bidar    (as needed) → also manages TASKS.md as a live table — add/update/reprioritize; the 30-min focus reminder starts on the first call
+jadu-bazgu    (on demand) → for one request: log task, restate, offer options, confirm, then execute
    ... do the actual work ...
-jadu-payan   (end)    → write the session brief, update docs/tasks, commit, and push
-jadu-push    (manual) → commit and push without a full session close
+jadu-payan    (end)      → write the session brief, update docs/tasks, commit, and push — never ends with a question
+jadu-push     (manual)   → commit and push without a full session close
 ```
 
-`Payan` now includes the push workflow: after it writes the session brief and updates
-`WORKLOG.md` / `TASKS.md` / `AGENTS.md`, it stages changes, commits, and pushes. Use
-`jadu-push` when you want to commit and push without doing the full Payan closeout.
-Payan always closes by telling you to run `/clear` then `/jadu-bidar` for the next
-session — that part needs your own keystroke; no skill can trigger it for you.
+`Payan` includes the push workflow: after it writes the session brief and updates
+`WORKLOG.md` / `TASKS.md` / `AGENTS.md` (and `README.md` when the change is structural), it
+stages changes, commits, and pushes, then reports a rigid confirmation line with a direct
+commit link — never a vague "done." Use `jadu-push` when you want to commit and push
+without doing the full Payan closeout. Payan always closes by telling you to run `/clear`
+then `/jadu-bidar` for the next session — that part needs your own keystroke; no skill can
+trigger it for you.
+
+Staging in Payan and Push never uses `git add -A` by default — only files the current
+session actually touched get staged. If you want a full `git add -A` for one push, say so
+explicitly (e.g. "stage everything") — it's a one-time opt-in, never the default.
 
 ---
 
 ## What each skill actually reads and writes
 
-All six skills work on files in the current project's root — no special folder
-structure required:
+All skills work on files in the current project's root — no special folder structure
+required:
 
 - `AGENTS.md` — the shared, agent-agnostic guide every agent reads first
 - `CLAUDE.md` — optional, Claude-only notes, points back to `AGENTS.md`
 - `PROJECT.md` — identity, tools, team, timeline
-- `TASKS.md` — the live task list `jadu-kar` and `jadu-bidar`/`jadu-payan` manage
+- `TASKS.md` — the live task list `jadu-bidar` manages, rendered as a table; any actionable
+  prompt logs a task here immediately, without being asked
 - `WORKLOG.md` — a dated log of what happened each session, written by `jadu-payan`
 
 None of this requires a database, a server, or an account — it's just Markdown files an
@@ -194,7 +207,7 @@ agent reads and edits like any other file in your repo.
 
 ## Optional: project secrets (`.env`)
 
-**Jadu itself needs no secrets** — none of the six skills read a token or key. But if
+**Jadu itself needs no secrets** — none of the skills read a token or key. But if
 *your project* uses API keys or credentials, the repo ships an optional
 [`.env.example`](.env.example) as a starting point:
 
@@ -238,9 +251,8 @@ Copy, trim, or ignore this — it's a starting point, not a requirement.
 
 ## Optional: 30-minute sound alert
 
-`jadu-kar` sets the only focus reminder — 30 minutes, on its first call each session, no
-60-minute variant. (`jadu-bidar` doesn't set one at all; waking up and reading context
-isn't billable focus time.) Claude Code can play a sound at each reminder if `ffplay`
+`jadu-bidar` sets the only focus reminder — 30 minutes, on its first call each session, no
+60-minute variant. Claude Code can play a sound at each reminder if `ffplay`
 (part of `ffmpeg`) is installed and `30.mp3` exists at `~/.claude/sounds/`:
 
 ```bash

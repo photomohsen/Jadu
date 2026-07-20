@@ -1,4 +1,4 @@
 interface:
-  display_name: "Jadu Kar"
-  short_description: "Manage tasks through conversation"
-  default_prompt: "Use $jadu-kar to add, update, or review tasks in TASKS.md."
+  display_name: "Jadu Kar (retired)"
+  short_description: "Merged into Jadu Bidar"
+  default_prompt: "Use $jadu-bidar instead - task management now lives there."
