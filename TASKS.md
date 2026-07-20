@@ -5,17 +5,7 @@
 1. **[P1] 🔄 Publish the public GitHub repo — due: TBD (2/4)**
 2. **[P1] ✅ Add `jadu-bina` reviewer loop to the public repo — due: 2026-07-18 (4/4)**
 3. **[P3] ⬜ Nice-to-haves (0/3)**
-4. **[P1] 🔄 Session-behavior redesign (v0.8.0) — due: TBD (3/5)**
-
-## [P1] 🔄 Session-behavior redesign (v0.8.0) — due: TBD
-**Goal:** ship the v0.8.0 changes described in `CHANGELOG.md` — Bidar+Kar merge, ambient
-task logging, Bazgu, hardened Payan/Push, Zad/Bina additions — across both agent surfaces,
-QA'd, and pushed.
-- [x] Research: live upstream fetch, direct read of this repo's prior skills, friction-mining pass over real session history
-- [x] Write all 7 skills, both agent surfaces (Claude Code + Codex, including `agents/openai.yaml` for new skills)
-- [x] Update `README.md`, `CHANGELOG.md`, `TASKS.md`, `WORKLOG.md`
-- [ ] Independent QA pass on all 14 skill files before pushing
-- [ ] Push to `github.com/photomohsen/Jadu` — own explicit go-ahead, not implied by earlier approvals
+4. **[P1] ✅ Session-behavior redesign (v0.8.0) — completed 2026-07-20 (5/5)**
 
 ## [P1] 🔄 Publish the public GitHub repo — due: TBD
 **Goal:** `https://github.com/photomohsen/Jadu` exists, public, with this content pushed as the initial commit.
@@ -51,6 +41,17 @@ QA'd, and pushed.
   this cannot be automated, it still needs the user's own keystroke. Updated every
   cross-reference (`AGENTS.md`, `CLAUDE.md`, `README.md`, `PROJECT.md`, Codex frontmatter).
   See `CHANGELOG.md` [0.6.0].
+
+- [x] ✅ **Session-behavior redesign (v0.8.0) — completed 2026-07-20.** Bidar absorbed Kar
+  (merged into one command, ambient task logging, live task tables); `jadu-kar` kept as a
+  redirect stub. New `jadu-bazgu` (backbrief: log task, restate, offer options, confirm,
+  execute — on demand only). Payan is now unambiguously terminal (states its own
+  no-questions rule, reports a rigid commit-confirmation line + URL) and Push matches; both
+  keep `git add -A` banned by default with one explicit opt-in phrase. Zad gained a closing
+  compaction nudge; Bina gained explicit completion-gate language. Root `AGENTS.md` /
+  `CLAUDE.md` brought back in sync. Independent QA pass caught and fixed 4 issues (a
+  Claude/Codex parity break, a self-contradiction in Payan's own memory step, the 2 stale
+  root docs, a leftover "subproject" reference) before push. See `CHANGELOG.md` [0.8.0].
 
 ## [P3] ⬜ Nice-to-haves
 **Goal:** polish once the base repo is live and used a few times.
