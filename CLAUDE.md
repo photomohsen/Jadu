@@ -12,9 +12,9 @@ sessions. Claude Code uses the Markdown slash commands in `.claude/commands/`.
 
 | Command | Purpose |
 |---|---|
-| `/jadu-bidar` | Start or resume a session, read project context, update planning subtasks. Also manages `TASKS.md` as a live table for the rest of the session (merged from the former `/jadu-kar`), and sets the 30-minute focus reminder on its first invocation each session |
+| `/jadu-bidar` | Start or resume a session, read project context, update planning subtasks. Also manages `TASKS.md` as a live table for the rest of the session, and sets the 30-minute focus reminder on its first invocation each session |
 | `/jadu-zad` | Initialize project context files such as `PROJECT.md`, `AGENTS.md`, optional `CLAUDE.md`, and `TASKS.md` |
-| `/jadu-kar` | Retired — redirect stub pointing at `/jadu-bidar`, which now handles task management |
+| `/jadu-kar` | Quick, read-only peek at `TASKS.md` as a table — fires on the command or on a plain mid-conversation mention of "Jadu-kar"; never writes, never pulls git, never sets the reminder |
 | `/jadu-bazgu` | For one specific request: log it as a task, restate it, offer 2–3 options, confirm, then execute |
 | `/jadu-payan` | Close a session by writing a session brief and updating project docs; never ends with a question |
 | `/jadu-push` | Stage, commit, and push only when the user explicitly invokes it |

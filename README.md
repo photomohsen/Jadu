@@ -22,6 +22,7 @@ project, on any machine, picks up exactly where the last session left off.
 |---|---|---|---|---|
 | **Zad** | زاد | born | `/jadu-zad` · `jadu-zad` | Ask setup questions once, write `PROJECT.md` / `AGENTS.md` / `TASKS.md` |
 | **Bidar** | بیدار | wake up | `/jadu-bidar` · `jadu-bidar` | Start a session — read context, pull latest, expand tasks — and manage `TASKS.md` as a live table for the rest of the session (add, update, complete, reprioritize); starts the 30-min focus reminder on its first call |
+| **Kar** | کار | work | `/jadu-kar` · `jadu-kar` | Quick, read-only peek: pull `TASKS.md` and show it as a table — no session setup, no writes, no reminder. Fires on the command or just mentioning "Jadu-kar" mid-conversation |
 | **Bazgu** | بازگو | retell | `/jadu-bazgu` · `jadu-bazgu` | For one specific request: log it as a task, restate it back, offer 2–3 options, wait for confirmation, then execute — on demand, not a standing mode |
 | **Payan** | پایان | end | `/jadu-payan` · `jadu-payan` | Close a session — write a brief, update docs/tasks, commit and push, then tell you to `/clear` and run `/jadu-bidar` next. Never ends with a question. |
 | **Push** | — | push (English) | `/jadu-push` · `jadu-push` | Commit and push without a full session close |
@@ -34,9 +35,10 @@ Optional reviewer loop:
 |---|---|---|---|---|
 | **Bina** | بینا | seeing / observant | `/jadu-bina` · `jadu-bina` | Review active work, turn confirmed findings into tasks, and keep the QA loop going until the artifact is actually ready. A task counts as done when Bina is satisfied, not when the executor says so. |
 
-`Kar` (task management) is no longer a separate command — it merged into `Bidar`. A
-`jadu-kar` stub still exists on both agent surfaces so old habit doesn't hit a dead end; it
-just points at `jadu-bidar`.
+`Kar` is a lightweight, read-only companion to `Bidar` — say `/jadu-kar` or just mention
+"Jadu-kar" mid-conversation to pull up the current `TASKS.md` as a table. It never writes;
+adding, completing, or reprioritizing tasks still goes through `Bidar` (or plain
+conversation).
 
 ---
 
@@ -86,7 +88,7 @@ mkdir -p ~/.claude/commands
 cp Jadu/.claude/commands/jadu-*.md ~/.claude/commands/
 ```
 
-They become available as slash commands: `/jadu-bidar`, `/jadu-zad`, `/jadu-bazgu`,
+They become available as slash commands: `/jadu-bidar`, `/jadu-kar`, `/jadu-zad`, `/jadu-bazgu`,
 `/jadu-payan`, `/jadu-push`, `/jadu-bina`.
 
 **Codex** — copy the skill folders globally:
@@ -168,6 +170,7 @@ There are two separate, agent-agnostic things to keep in mind:
 jadu-zad      (once)     → initialize this project's context files
 jadu-bidar    (start)    → read context, pull latest, expand tasks (no reminder yet)
 jadu-bidar    (as needed) → also manages TASKS.md as a live table — add/update/reprioritize; the 30-min focus reminder starts on the first call
+jadu-kar      (any time)  → quick read-only peek at TASKS.md as a table — no writes, no setup
 jadu-bazgu    (on demand) → for one request: log task, restate, offer options, confirm, then execute
    ... do the actual work ...
 jadu-payan    (end)      → write the session brief, update docs/tasks, commit, and push — never ends with a question
@@ -197,7 +200,8 @@ required:
 - `CLAUDE.md` — optional, Claude-only notes, points back to `AGENTS.md`
 - `PROJECT.md` — identity, tools, team, timeline
 - `TASKS.md` — the live task list `jadu-bidar` manages, rendered as a table; any actionable
-  prompt logs a task here immediately, without being asked
+  prompt logs a task here immediately, without being asked. `jadu-kar` also reads this file
+  for its quick view — read-only, never writes
 - `WORKLOG.md` — a dated log of what happened each session, written by `jadu-payan`
 
 None of this requires a database, a server, or an account — it's just Markdown files an

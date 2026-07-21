@@ -15,8 +15,9 @@ for Codex. No build step, no dependencies.
 
 - `jadu-zad` / `/jadu-zad` — set up or refresh this repo's own context files
 - `jadu-bidar` / `/jadu-bidar` — start a session on this repo; also manages `TASKS.md` as a
-  live table for the rest of the session (merged from the former `jadu-kar`, which is now a
-  redirect stub)
+  live table for the rest of the session
+- `jadu-kar` / `/jadu-kar` — quick, read-only peek at `TASKS.md` as a table; fires on the
+  command or just mentioning "Jadu-kar" mid-conversation; never writes
 - `jadu-bazgu` / `/jadu-bazgu` — for one request: log it as a task, restate it, offer
   options, confirm, then execute
 - `jadu-payan` / `/jadu-payan` — close a session, update `WORKLOG.md`/`TASKS.md`; never ends
