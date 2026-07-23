@@ -23,7 +23,7 @@ project, on any machine, picks up exactly where the last session left off.
 | **Zad** | زاد | born | `/jadu-zad` · `jadu-zad` | Ask setup questions once, write `PROJECT.md` / `AGENTS.md` / `TASKS.md` |
 | **Bidar** | بیدار | wake up | `/jadu-bidar` · `jadu-bidar` | Start a session — read context, pull latest, expand tasks — and manage `TASKS.md` as a live table for the rest of the session (add, update, complete, reprioritize); starts the 30-min focus reminder on its first call |
 | **Kar** | کار | work | `/jadu-kar` · `jadu-kar` | Quick, read-only peek: pull `TASKS.md` and show it as a table — no session setup, no writes, no reminder. Fires on the command or just mentioning "Jadu-kar" mid-conversation |
-| **Bazgu** | بازگو | retell | `/jadu-bazgu` · `jadu-bazgu` | For one specific request: log it as a task, restate it back, offer 2–3 options, wait for confirmation, then execute — on demand, not a standing mode |
+| **Bazgu** | بازگو | retell | `/jadu-bazgu` · `jadu-bazgu` | For one specific request: log it as a task, quote it back verbatim, restate it, offer 2–3 options (including flagging if the request itself could be improved), confirm, then execute — on demand, not a standing mode |
 | **Payan** | پایان | end | `/jadu-payan` · `jadu-payan` | Close a session — write a brief, update docs/tasks, commit and push, then tell you to `/clear` and run `/jadu-bidar` next. Never ends with a question. |
 | **Push** | — | push (English) | `/jadu-push` · `jadu-push` | Commit and push without a full session close |
 
@@ -171,7 +171,7 @@ jadu-zad      (once)     → initialize this project's context files
 jadu-bidar    (start)    → read context, pull latest, expand tasks (no reminder yet)
 jadu-bidar    (as needed) → also manages TASKS.md as a live table — add/update/reprioritize; the 30-min focus reminder starts on the first call
 jadu-kar      (any time)  → quick read-only peek at TASKS.md as a table — no writes, no setup
-jadu-bazgu    (on demand) → for one request: log task, restate, offer options, confirm, then execute
+jadu-bazgu    (on demand) → for one request: log task, quote it back verbatim + restate, offer options (incl. request improvements), confirm, then execute
    ... do the actual work ...
 jadu-payan    (end)      → write the session brief, update docs/tasks, commit, and push — never ends with a question
 jadu-push     (manual)   → commit and push without a full session close
