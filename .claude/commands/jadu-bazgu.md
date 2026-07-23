@@ -13,16 +13,20 @@ just guaranteed here rather than inferred.
 
 ## Step 2 — Backbrief
 
-Restate the request in your own words: what you understood the goal to be, its scope, and
-anything you're assuming. This is a statement, not a question — the point is for the user to
-see their own ask reflected back, so a misunderstanding surfaces now rather than after work
-starts.
+First, quote the user's request back verbatim — their exact words, unedited — so they can
+confirm it was received correctly before anything else. Then restate it in your own words:
+what you understood the goal to be, its scope, and anything you're assuming. This is a
+statement, not a question — the point is for the user to see both their literal words and
+your interpretation reflected back, so a misreading or a misunderstanding surfaces now rather
+than after work starts.
 
 ## Step 3 — Offer options
 
-Propose 2–3 concrete ways to approach it — not just the literal framing restated as a plan.
-Lead with a recommendation and say why. If there's genuinely only one sane approach, say that
-plainly instead of inventing alternatives for their own sake.
+Propose 2–3 concrete ways to approach it — not just the literal framing restated as a plan. If
+the request itself looks like it could be improved (a missing constraint, an ambiguous scope,
+a simpler framing that gets the same result), include that as one of the options. Lead with a
+recommendation and say why. If there's genuinely only one sane approach and the request is
+already well-formed, say that plainly instead of inventing alternatives for their own sake.
 
 ## Step 4 — Wait for confirmation
 
