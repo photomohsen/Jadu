@@ -8,18 +8,24 @@ Before each run: check_loop_queue.py (anything to do?), then the usage gate
   long it takes (a weekly limit can mean days). STOP -> notify and exit.
 During a run: a watchdog asks the gate against the ceilings every
   WATCH_SECONDS and kills the run once a limit reaches its ceiling (or the
-  subscription line disappears). LOOP_TASK.md holds the progress, so the next
-  run picks the task back up after the reset.
-After a run: three runs in a row that change nothing stop the loop.
+  subscription line disappears). A slow or failed /usage is not a limit: only
+  MAX_CHECK_FAILURES unreadable checks in a row stop the run. LOOP_TASK.md
+  holds the progress, so the next run picks the task back up after the reset.
+  The watchdog also kills a run that goes HARD_CAP_SECONDS without a new
+  commit or a change to LOOP_TASK.md, and marks the open subtask `TIMEOUT 1`
+  (then `TIMEOUT 2`); the skill retries the first and gives up on the second.
+After a run: three runs in a row that change nothing stop the loop, killed
+  runs included.
 
 Usage:
     python3 scripts/jadu-loop/run_loop.py                        # /jadu-loop
-    python3 scripts/jadu-loop/run_loop.py "/jadu-loop-best-practice"
+    python3 scripts/jadu-loop/run_loop.py "/jadu-loop-best-practice --task"
 """
 
 import argparse
 import hashlib
 import os
+import re
 import shutil
 import signal
 import subprocess
@@ -36,11 +42,16 @@ POLL_SECONDS = 600
 WATCH_SECONDS = 180
 PAUSE_SECONDS = 20
 MAX_STALLS = 3
+MAX_CHECK_FAILURES = 3
+HARD_CAP_SECONDS = 30 * 60
+TIMEOUT = "timeout"
 
 ROOT = Path.cwd()
 LOG = ROOT / ".loop_state" / "runs.log"
 QUEUE_GATE = Path(__file__).resolve().parent / "check_loop_queue.py"
 CLAUDE_CMD = [shutil.which("claude") or "claude"]
+# The subtask a run is working on: the first open box not already given up on.
+OPEN_SUBTASK_RE = re.compile(r"^- \[ \] (?!.*(?:BLOCKED|SKIPPED)).+$", re.MULTILINE)
 
 
 def log(line: str) -> None:
@@ -58,7 +69,29 @@ def progress_state() -> str:
         folder = ROOT / name
         if folder.is_dir():
             h.update("\n".join(sorted(p.name for p in folder.iterdir())).encode())
+    head = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True)
+    h.update(head.stdout.encode())
     return h.hexdigest()
+
+
+def mark_timeout() -> str | None:
+    """Tag the open subtask TIMEOUT 1, or TIMEOUT 1 -> TIMEOUT 2. Returns the mark."""
+    task = ROOT / "LOOP_TASK.md"
+    if not task.exists():
+        return None
+    text = task.read_text(encoding="utf-8")
+    m = OPEN_SUBTASK_RE.search(text)
+    if not m:
+        return None
+    line = m.group(0)
+    if "TIMEOUT 2" in line:
+        return "TIMEOUT 2"
+    if "TIMEOUT 1" in line:
+        new, mark = line.replace("TIMEOUT 1", "TIMEOUT 2"), "TIMEOUT 2"
+    else:
+        new, mark = f"{line} — TIMEOUT 1", "TIMEOUT 1"
+    task.write_text(text[: m.start()] + new + text[m.end() :], encoding="utf-8")
+    return mark
 
 
 def wait_for_go(sleep=time.sleep) -> bool:
@@ -99,12 +132,28 @@ def run_task(prompt: str) -> str | None:
             env=env,
             start_new_session=os.name != "nt",
         )
+        failures = 0
+        state, moved = progress_state(), time.monotonic()
         while True:
             try:
                 proc.wait(timeout=WATCH_SECONDS)
                 break
             except subprocess.TimeoutExpired:
+                now = progress_state()
+                if now != state:
+                    state, moved = now, time.monotonic()
+                elif time.monotonic() - moved >= HARD_CAP_SECONDS:
+                    killed = TIMEOUT
+                    kill_tree(proc)
+                    break
                 verdict, reason = usage.check(watch=True)
+                if usage.unreadable(reason):
+                    failures += 1
+                    log(f"usage check failed ({failures}/{MAX_CHECK_FAILURES}), run continues: {reason}")
+                    if failures < MAX_CHECK_FAILURES:
+                        continue
+                else:
+                    failures = 0
                 if verdict != usage.GO:
                     killed = reason
                     kill_tree(proc)
@@ -133,15 +182,19 @@ def main(argv: list[str] | None = None) -> int:
         before = progress_state()
         log(f"=== run {i} ===")
         killed = run_task(args.prompt)
-        if killed:
-            log(f"watchdog stopped the run: {killed}")
-            usage.notify(f"watchdog stopped a run, will resume after the reset: {killed}")
-            continue  # wait_for_go sleeps until the limit resets
         stalls = stalls + 1 if progress_state() == before else 0
         if stalls >= MAX_STALLS:
             log(f"no progress in {MAX_STALLS} runs, stopping")
-            usage.notify(f"jadu-loop stopped: no progress in {MAX_STALLS} runs")
+            usage.notify(usage.say("stalled", n=MAX_STALLS))
             return 1
+        if killed == TIMEOUT:
+            mark = mark_timeout() or "TIMEOUT"
+            log(f"watchdog stopped the run: no progress in {HARD_CAP_SECONDS // 60} min, marked {mark}")
+            usage.notify(usage.say("timeout", minutes=HARD_CAP_SECONDS // 60, mark=mark))
+        elif killed:
+            log(f"watchdog stopped the run: {killed}")
+            usage.notify(usage.say("killed", why=usage.explain(killed)))
+            continue  # wait_for_go sleeps until the limit resets
         time.sleep(PAUSE_SECONDS)
     return 0
 

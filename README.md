@@ -83,7 +83,8 @@ For projects that use multiple agents, keep an `AGENTS.md` file in the project r
 
 `jadu-loop-best-practice` uses the same setup, task files and scripts. The difference: where `jadu-loop` stops and waits for you (a `review-checkpoint`, a `VERIFY` that fails twice, an unclear subtask, a finished task), it makes the best-practice decision, writes it to a `## Decisions` section in `LOOP_TASK.md`, and continues. You review everything once, in the PR: a subtask that still fails after three fix attempts is skipped and the PR opens as a draft, with the decisions and skipped subtasks listed in its body. Hard limits still block: it never merges, pushes to trunk, touches production or secrets, or expands its own permissions.
 
-- Install it like `jadu-loop` (step 1 above), then run it with `claude -p "/jadu-loop-best-practice" --permission-mode acceptEdits` in place of `/jadu-loop` in step 7.
+- Install it like `jadu-loop` (step 1 above). Typed in a chat, `/jadu-loop-best-practice` starts `run_loop.py` detached and returns; the runner then works through the whole queue, one `claude -p "/jadu-loop-best-practice --task" --model opus --permission-mode acceptEdits` per run. Use that `--task` form in place of `/jadu-loop` in step 7 to run one task by hand.
+- Each subtask gets 20 minutes; a run that goes 30 minutes without a commit is stopped by the runner and its subtask marked `TIMEOUT 1` (retried) or `TIMEOUT 2` (skipped).
 - Optional queue: put further ready task files in `LOOP_TASK_QUEUE/`. Once a task's PR is open and it is archived, the next file (in name order) is promoted to `LOOP_TASK.md` and the following run starts it.
 - If the Briefing names how your project marks production (e.g. an `ENVIRONMENT=` line), the loop checks it first and refuses to run against production.
 

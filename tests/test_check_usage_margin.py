@@ -84,5 +84,23 @@ class NotifyChangeTest(unittest.TestCase):
         self.assertEqual(notify.call_count, 3)
 
 
+class ExplainTest(unittest.TestCase):
+    def test_unreadable_is_told_apart_from_a_limit(self):
+        self.assertTrue(usage.unreadable("usage check failed: timed out after 180 seconds"))
+        self.assertTrue(usage.unreadable("could not read weekly usage from /usage"))
+        _, over = usage.decide(usage_text(10, 96), OK_AUTH, {})
+        self.assertFalse(usage.unreadable(over))
+
+    def test_explains_a_limit_in_plain_words_per_language(self):
+        _, over = usage.decide(usage_text(91, 10), OK_AUTH, {}, watch=True)
+        with mock.patch.dict(usage.os.environ, {"LOOP_NOTIFY_LANG": "en"}):
+            self.assertEqual(
+                usage.explain(over),
+                "The 5-hour limit is at 91% (line 90%); it resets Oct 14, 2:19pm (Europe/Berlin).",
+            )
+        with mock.patch.dict(usage.os.environ, {"LOOP_NOTIFY_LANG": "fa"}):
+            self.assertIn("سهمیه‌ی ۵ ساعته به 91٪", usage.explain(over))
+
+
 if __name__ == "__main__":
     unittest.main()
