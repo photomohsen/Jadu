@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jadu Loop (Best Practice)"
+  short_description: "Unattended LOOP_TASK.md execution that decides and records instead of pausing (opt-in)"
+  default_prompt: "Use $jadu-loop-best-practice to execute the next open subtask(s) in LOOP_TASK.md."

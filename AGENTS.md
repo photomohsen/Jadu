@@ -17,6 +17,7 @@ Jadu is a public collection of reusable AI-agent workflows for structured projec
 | Zad | Initialize project context | `/jadu-zad` | `jadu-zad` skill |
 | Payan | Close a session (commits and pushes automatically at the end) | `/jadu-payan` | `jadu-payan` skill |
 | Loop | Autonomous, unattended execution of pre-approved subtasks from `LOOP_TASK.md` — opt-in, off by default | `/jadu-loop` | `jadu-loop` skill |
+| Loop (best practice) | Same as Loop, but decides and records instead of pausing for a human; the owner reviews every decision in the PR — opt-in, off by default | `/jadu-loop-best-practice` | `jadu-loop-best-practice` skill |
 
 `jadu-tamam` has been renamed to `jadu-payan`. Do not add new references to `jadu-tamam` except as historical migration notes.
 
@@ -29,7 +30,16 @@ Jadu is a public collection of reusable AI-agent workflows for structured projec
 - It never expands its own permissions — shell commands stay gated by whatever allowlist the project's agent surface already has configured.
 - A `VERIFY` failure gets exactly one targeted fix attempt, then blocks and waits for a human — never a second guess, never a retry loop.
 
-Do not generalize this pattern to any other Jadu workflow. `jadu-bidar`/`jadu-payan` keep the normal "confirm before implementing" rule.
+### The best-practice variant moves the human gate, it does not remove it
+
+`jadu-loop-best-practice` is a second, separately opted-in variant for owners who would rather review once, at the PR, than be paged at every checkpoint. Where `jadu-loop` blocks and waits, it decides and continues: it self-reviews a `review-checkpoint`, makes up to three fix attempts on a failing `VERIFY` and then skips that subtask (and the ones depending on it) instead of blocking, resolves an underspecified `ACTION` with the most conservative reading, and promotes the next task from `LOOP_TASK_QUEUE/` once the current one is archived. It stays safe because of what it still refuses to do:
+
+- Every decision is written to a `## Decisions` section of `LOOP_TASK.md` (situation, choice, alternative, reason, undo) and copied into the PR. Any skipped subtask makes the PR a draft.
+- It never makes a failing `VERIFY` pass by editing the check, a test or an assertion instead of the code.
+- Hard limits still block: never merge, push to trunk, force-push or rewrite pushed history; never touch production or anything live (real messages, money, production deploys/data); never read or commit secrets; never expand its own permissions; abort and block on any merge/rebase conflict; never act outside its own branch and PR.
+- Context reads beyond `ACTION` are bounded to what a decision needs — no open-ended exploration.
+
+Do not generalize either pattern to any other Jadu workflow. `jadu-bidar`/`jadu-payan` keep the normal "confirm before implementing" rule.
 
 ## Agent compatibility rules
 
