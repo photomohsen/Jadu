@@ -20,6 +20,7 @@ After a run: three runs in a row that change nothing stop the loop, killed
 Usage:
     python3 scripts/jadu-loop/run_loop.py                        # /jadu-loop
     python3 scripts/jadu-loop/run_loop.py "/jadu-loop-best-practice --task"
+    python3 scripts/jadu-loop/run_loop.py --model <session model> --effort <session effort>
 """
 
 import argparse
@@ -115,12 +116,14 @@ def kill_tree(proc: subprocess.Popen) -> None:
     proc.wait()
 
 
-def run_task(prompt: str) -> str | None:
+def run_task(prompt: str, model: str = MODEL, effort: str | None = None) -> str | None:
     """One `claude -p` run under the watchdog. Returns why it was killed, or None."""
     out_file = ROOT / ".loop_state" / "last_run.out"
     out_file.parent.mkdir(parents=True, exist_ok=True)
     env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
-    cmd = [*CLAUDE_CMD, "-p", prompt, "--model", MODEL, "--permission-mode", "acceptEdits"]
+    cmd = [*CLAUDE_CMD, "-p", prompt, "--model", model, "--permission-mode", "acceptEdits"]
+    if effort:
+        cmd += ["--effort", effort]
     killed = None
     with out_file.open("w", encoding="utf-8") as out:
         proc = subprocess.Popen(
@@ -169,7 +172,13 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("prompt", nargs="?", default="/jadu-loop")
     parser.add_argument("--max-runs", type=int, default=80)
+    parser.add_argument("--model", default=MODEL, help="the starting session's model")
+    parser.add_argument("--effort", help="the starting session's effort level")
     args = parser.parse_args(argv)
+    if "fable" in args.model.lower():  # Fable bills usage credits in -p mode
+        log(f"model {args.model} is Fable, using {MODEL} instead")
+        args.model = MODEL
+    log(f"model {args.model}, effort {args.effort or 'default'}")
 
     stalls = 0
     for i in range(1, args.max_runs + 1):
@@ -181,7 +190,7 @@ def main(argv: list[str] | None = None) -> int:
             return 1
         before = progress_state()
         log(f"=== run {i} ===")
-        killed = run_task(args.prompt)
+        killed = run_task(args.prompt, args.model, args.effort)
         stalls = stalls + 1 if progress_state() == before else 0
         if stalls >= MAX_STALLS:
             log(f"no progress in {MAX_STALLS} runs, stopping")

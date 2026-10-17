@@ -117,6 +117,17 @@ class RunLoopTest(unittest.TestCase):
             self.assertEqual(run_loop.main([]), 1)
         run_task.assert_not_called()
 
+    def test_loop_uses_the_session_model_and_effort_but_never_fable(self):
+        (self.root / "LOOP_TASK.md").write_text("STATUS: idle\n\n- [ ] 1\n", encoding="utf-8")
+        for model, want in (("claude-opus-5-5", "claude-opus-5-5"), ("claude-fable-5-1", run_loop.MODEL)):
+            with (
+                mock.patch.object(usage, "check", return_value=(usage.GO, "ok")),
+                mock.patch.object(run_loop, "run_task", return_value=None) as run_task,
+                mock.patch.object(run_loop.time, "sleep"),
+            ):
+                run_loop.main(["--max-runs", "1", "--model", model, "--effort", "xhigh"])
+            run_task.assert_called_once_with("/jadu-loop", want, "xhigh")
+
 
 if __name__ == "__main__":
     unittest.main()
