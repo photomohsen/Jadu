@@ -50,6 +50,16 @@ Not optional, not "read it once and it looked fine." For every subtask — and *
 
 Some subtasks — a visually significant redesign, a payment-flow change, anything you genuinely want eyeballed before the loop continues — deserve a mandatory stop even when nothing is technically broken. `jadu-loop` treats `TYPE: review-checkpoint` exactly like a blocked `VERIFY`: it sets `STATUS: blocked`, notes it's a deliberate pause (not a failure), commits, and stops until you manually set `STATUS: idle` again. Use this instead of writing a `VERIFY` designed to fail — that pollutes the run log with a fake failure and makes real blocks harder to spot.
 
+## 9. Writing a task for `jadu-loop-best-practice`
+
+The best-practice variant runs the same file, but it never pauses for a `review-checkpoint` — it self-reviews and continues — and it resolves gaps instead of stopping. Write the file so its decisions land where you want them:
+
+- **Need a real stop?** Use `TYPE: hard-stop`. It is the only subtask type that pauses this variant; a `review-checkpoint` or an `ACTION` that says "wait for X" does not.
+- **Name the production marker** in the Briefing (e.g. "production = `ENVIRONMENT=production` in `.env`"). The loop checks it every run and refuses to run against production.
+- **Name every dev/sandbox target** the subtasks may reach (a dev worker URL, a sandbox payment API). An unnamed target counts as live and blocks.
+- **Name the project's test command** in the Briefing. Self-review re-runs it at every `review-checkpoint`.
+- **Order matters more, not less:** a skipped subtask also skips everything that depends on it, so rules 3, 5 and 6 decide how much work survives one failure.
+
 ## General shape to aim for
 
 - **`branch`** subtask first, always.

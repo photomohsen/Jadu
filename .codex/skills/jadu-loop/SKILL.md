@@ -41,12 +41,14 @@ Read `LOOP_TASK.md` in the current directory. Note `STATUS`, `BRANCH`, the `## B
 
 If this is the very first subtask (`TYPE: branch`) and the branch named in `BRANCH:` doesn't exist yet, this run will create it.
 
+Uncommitted changes at the start of a run are the open subtask's partial work from a run that was stopped. Keep them and finish that subtask from there — never stash or discard them, never commit them under another subtask. If the open subtask's line carries `TIMEOUT 1` (written by `run_loop.py`), resume it with a fresh time budget. `TIMEOUT 2` → block it at once (step 2, item 6), reason `timed out twice`.
+
 ### 2. Process subtasks in sequence, in this one invocation
 
-Track the wall-clock start time. For each open subtask, top to bottom:
+For each open subtask, top to bottom:
 
 0. **Group awareness:** a subtask may carry an optional `GROUP: <name>` line. Subtasks sharing the same `GROUP:` value must be completed together in this one invocation, back to back, once the first one starts — later subtasks in it depend on context freshly built by an earlier one, and starting a new invocation for the next subtask would mean a blank conversation with none of that context. Never let a group span two invocations. **`GROUP:` only forces subtasks to run back-to-back — it does NOT defer any subtask's own `VERIFY` until the group finishes.** Each subtask's `VERIFY` still runs immediately after its own `ACTION`, so a `LOOP_TASK.md` author must never write a subtask whose `VERIFY` depends on an artifact a *later* subtask (grouped or not) will create — see `docs/jadu-loop-authoring-guide.md`.
-1. **Soft time check first:** if more than ~10 minutes have elapsed since step 0, do not start this subtask — unless it shares a `GROUP:` with the subtask you just finished, in which case finish the whole group first, then apply the check before the next group or standalone subtask.
+1. **Time budget:** note the time (`date`) when you start each subtask; it gets **20 minutes**. Past that, start no new fix attempt: if its `VERIFY` passes, commit and continue; otherwise block it (item 6), naming the time limit as the last failure.
 2. Run the subtask's `ACTION` exactly as written — no interpretation, no substitution, no "improving" it.
 3. Run its `VERIFY` check.
 4. **VERIFY passes:** stage exactly the files this subtask touched (never a blanket add-everything) and commit with the message the subtask specifies (or a short, obvious one if none given). Check the subtask's box in `LOOP_TASK.md` and commit that too. Continue to the next subtask.
@@ -56,28 +58,30 @@ Track the wall-clock start time. For each open subtask, top to bottom:
 
 If every subtask (including the final `finalize` one) is done and verified: move `LOOP_TASK.md` to `LOOP_TASK_ARCHIVE/<today's date>-<slug from BRANCH>.md`, commit that move, and note the task is fully complete.
 
+Before the run ends, however it ends: stop every preview server, watcher or background process this run started.
+
 ### 3. Log
 
 Append one line to `logs/loop.log` (create if missing): timestamp, branch/task name, subtasks completed this run, and end state (`in progress` / `blocked` / `complete`).
 
 ### 4. Notify
 
-If a notification channel is configured for this project (see `scripts/jadu-loop/README.md`), send exactly one message per invocation via `python3 scripts/jadu-loop/notify_telegram.py "<message>"` (send-only). If none is configured, skip this step.
+If a notification channel is configured for this project (see `scripts/jadu-loop/README.md`), send a message via `python3 scripts/jadu-loop/notify_telegram.py "<message>"` (send-only) **only** when the task is complete (archived) or the run blocks or stops early. A subtask finishing sends nothing. If none is configured, skip this step.
 
 Compose the message in whatever language the project owner reads these in. Keep technical tokens (branch name, subtask numbers, file paths, commands/error text) isolated in their own spans or lines, never inline mid-sentence unwrapped.
 
-**Not blocked:**
+**Complete** (all subtasks done and archived):
 ```
 <branch>
 
 Done (subtasks <range/list>):
 - <one short line per completed subtask>
 
-Stopped: <why — soft time limit / all subtasks done and archived>
-Next: subtask <N> — <short description>
+PR: <url>
+Next: <the next queued task / nothing queued>
 ```
 
-**Blocked** (a `VERIFY` failed twice, or a `review-checkpoint` was hit) — lead with something that stands out:
+**Blocked** (a `VERIFY` failed twice, the time budget ran out, a `review-checkpoint` was hit, or anything else ended the run early) — lead with something that stands out:
 ```
 BLOCKED — <branch>
 

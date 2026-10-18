@@ -37,7 +37,7 @@ def main() -> None:
         print("no LOOP_TASK.md — nothing queued", file=sys.stderr)
         sys.exit(1)
 
-    text = LOOP_TASK_FILE.read_text()
+    text = LOOP_TASK_FILE.read_text(encoding="utf-8")
 
     status_match = STATUS_RE.search(text)
     status = status_match.group(1).lower() if status_match else None
@@ -47,7 +47,10 @@ def main() -> None:
         sys.exit(1)
 
     if status != "idle":
-        print(f"STATUS missing or unrecognized ({status!r}) — treating as nothing to do", file=sys.stderr)
+        print(
+            f"STATUS missing or unrecognized ({status!r}) — treating as nothing to do",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     if OPEN_SUBTASK_RE.search(text):
