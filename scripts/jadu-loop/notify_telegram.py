@@ -93,7 +93,8 @@ if __name__ == "__main__":
 
     parse_mode = None if args.parse_mode.lower() == "none" else args.parse_mode
 
-    message = args.message or sys.stdin.read().strip()
+    # stdin as UTF-8: Windows Python reads pipes as cp1252 and breaks Persian and emoji (2026-10-18)
+    message = args.message or sys.stdin.buffer.read().decode("utf-8").strip()
     if not message:
         print("Error: no message provided", file=sys.stderr)
         sys.exit(1)

@@ -127,6 +127,8 @@ Append exactly one line to `logs/loop.log` (never rewrite the file), in exactly 
 
 ### 5. Notify
 
+**Never send a test message to Telegram** (owner's rule 2026-10-18). The group is the owner's real channel. Pass the message as one argument, never through stdin or a heredoc. If a send fails, do not retry with variations: write the failure in the task report and the PR body, and continue.
+
 If `scripts/jadu-loop/notify_telegram.py` exists, send messages with it (it fails harmlessly when not configured). Send **only**:
 - **one task report when the task is finished** (finalize done, archived, next promoted);
 - **one message when the run fails or stops early**: a hard limit, the usage gate, or anything else that ends the run before the task is done.
