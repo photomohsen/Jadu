@@ -11,9 +11,9 @@ cp -R scripts/jadu-loop /your-project/scripts/
 
 | Script | Purpose | Required? |
 |---|---|---|
-| `check_loop_queue.py` | Reads `LOOP_TASK.md`'s `STATUS` line and whether an open (non-`BLOCKED`) subtask exists. Exits `0` (proceed) only when there's real work to do — so the `&&` chain never spends a token on a "nothing to do" tick. | **Yes** — this is the actual gate |
-| `check_usage_margin.py` | A second, free pre-check. Queries `claude -p "/usage"` ($0, no model turn) and judges the 5-hour and weekly limits separately: a new task starts only under the **start line** (5-hour 80%, weekly 95%). Exits `0` GO, `2` WAIT (a limit is over its line), `1` STOP (not on the subscription, `ANTHROPIC_API_KEY` set, or not a claude.ai login — a human must look). `--watch` judges against the **ceilings** (5-hour 90%, weekly 98%) instead. Edit `LIMITS` to change the numbers. | Recommended on Claude Code — it is what keeps the loop off usage credits |
-| `run_loop.py` | The unattended runner. Before each task: queue gate, then usage gate — on WAIT it sleeps 10 minutes and asks again until the limit has reset, then continues by itself. During a task: a watchdog checks the ceilings every 3 minutes and stops the run if one is reached (the task resumes after the reset); a slow or failed `/usage` is tolerated twice and only the third in a row stops the run. It also stops a run that goes 30 minutes without a new commit or a change to `LOOP_TASK.md` and marks the open subtask `TIMEOUT 1` (a second time `TIMEOUT 2`, which the skill gives up on). Three runs in a row without progress, stopped runs included, end the loop. Always passes `--model opus` (Fable models bill usage credits in `-p` mode). | Recommended for unattended runs |
+| `check_loop_queue.py` | Reads `LOOP_TASK.md`'s `STATUS` line and whether an open (non-`BLOCKED`) subtask exists. Exits `0` (proceed) only when there's real work to do — so the `&&` chain never spends a token on a "nothing to do" tick. With `--queue` (for `jadu-loop-best-practice`, which promotes from `LOOP_TASK_QUEUE/`), a missing `LOOP_TASK.md` with queued `*.md` files also proceeds. | **Yes** — this is the actual gate |
+| `check_usage_margin.py` | A second, free pre-check. Queries `claude -p "/usage"` ($0, no model turn) and judges the 5-hour and weekly limits separately: a new task starts only under the **start line** (5-hour 80%, weekly 95%). Exits `0` GO, `2` WAIT (a limit is over its line), `1` STOP (not on the subscription, `ANTHROPIC_API_KEY` set, or not a claude.ai login — a human must look). `--watch` judges against the **ceilings** (5-hour 90%, weekly 98%) instead. On plans with a separate Fable weekly line, a Fable run (`run_loop.py --allow-fable`) is judged on that line too. Edit `LIMITS` to change the numbers. | Recommended on Claude Code — it is what keeps the loop off usage credits |
+| `run_loop.py` | The unattended runner. Before each task: queue gate, then usage gate — on WAIT it sleeps 10 minutes and asks again until the limit has reset, then continues by itself. During a task: a watchdog checks the ceilings every 3 minutes and stops the run if one is reached (the task resumes after the reset); a slow or failed `/usage` is tolerated twice and only the third in a row stops the run. It also stops a run that goes 30 minutes without a new commit or a change to `LOOP_TASK.md` and marks the open subtask `TIMEOUT 1` (a second time `TIMEOUT 2`, which the skill gives up on). Passes `--model opus` by default; a Fable model is replaced by `opus` unless you pass `--allow-fable`. Passes the project's `.claude/settings.json` + `settings.local.json` allowlist as `--allowedTools` (a settings file that is not valid JSON is skipped and logged). Sends the message a task leaves in `.loop_state/telegram.md`. Three runs in a row without progress, stopped runs included, end the loop. | Recommended for unattended runs |
 | `chat_usage_guard.py` | A `UserPromptSubmit` hook for normal chats: once a limit reaches its ceiling, it holds your message once and says why; sending it again goes through. | Optional |
 | `notify_telegram.py` | Sends the loop's Telegram messages: one report when a task finishes, one when a run fails or stops early, and the runner's own pause/resume/timeout notes. | Optional — `jadu-loop`'s "Notify" step is a no-op if this script (or your own replacement) isn't present |
 
@@ -74,7 +74,15 @@ python3 scripts/jadu-loop/run_loop.py "/jadu-loop-best-practice --task"
 | 5-hour limit | 80% | 90% | the 5-hour window resets |
 | Weekly limit | 95% | 98% | the weekly window resets |
 
-The gap between the two lines is room for a started task to finish. Progress lives in `LOOP_TASK.md`, so a task the watchdog stopped picks up where it left off. Its log goes to `.loop_state/runs.log`.
+| Option | What it does |
+|---|---|
+| `--model <alias>` / `--effort <level>` | Model and effort for each `claude -p` run (default `opus`, the CLI's effort) |
+| `--allow-fable` | Keep a Fable model instead of replacing it; only on plans whose `/usage` shows a separate Fable weekly line |
+| `--wait-on-block` | On `STATUS: blocked`, stay alive and check `LOOP_TASK.md` every minute instead of exiting; continue once it is `idle` again |
+| `--queue` | Start even when only `LOOP_TASK_QUEUE/` has tasks (the first run promotes one) — for `jadu-loop-best-practice` |
+| `--max-runs <n>` | Upper bound on runs (default 80) |
+
+The gap between the two lines is room for a started task to finish. Progress lives in `LOOP_TASK.md`, so a task the watchdog stopped picks up where it left off. Its log goes to `.loop_state/runs.log`, including the queue gate's reason whenever it says there is nothing to do.
 
 The only hard switch is turning usage credits off in claude.ai → Settings → Usage (on Team/Enterprise plans that is the org admin's setting). These scripts are the guard for when it stays on.
 

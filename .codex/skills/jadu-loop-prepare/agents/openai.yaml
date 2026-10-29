@@ -1,0 +1,4 @@
+interface:
+  display_name: "Jadu Loop Prepare"
+  short_description: "Turn the project's existing tasks into a ready jadu-loop-best-practice queue"
+  default_prompt: "Use $jadu-loop-prepare to queue the project's open tasks for jadu-loop-best-practice."

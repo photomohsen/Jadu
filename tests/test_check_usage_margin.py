@@ -69,6 +69,60 @@ class DecideTest(unittest.TestCase):
             self.assertEqual(usage.check()[0], usage.WAIT)
 
 
+    def test_fable_line_ignored_outside_a_fable_run(self):
+        text = usage_text(10, 10).replace("Fable): 0%", "Fable): 99%")
+        self.assertEqual(self.decide(text), usage.GO)
+
+    def test_fable_run_waits_on_the_fable_line(self):
+        text = usage_text(10, 10).replace("Fable): 0%", "Fable): 96%")
+        self.assertEqual(self.decide(text, env={usage.FABLE_RUN_ENV: "1"}), usage.WAIT)
+
+    def test_fable_run_without_a_fable_line_waits(self):
+        text = usage_text(10, 10).split("Current week (Fable)")[0]
+        self.assertEqual(self.decide(text, env={usage.FABLE_RUN_ENV: "1"}), usage.WAIT)
+
+    def test_unreadable_reasons_are_told_apart_from_limits(self):
+        self.assertTrue(usage.unreadable("usage check failed: timeout"))
+        self.assertTrue(usage.unreadable("could not read weekly usage from /usage"))
+        self.assertFalse(usage.unreadable("paused: 5-hour at 85% (line 80%, resets ?)"))
+
+
+class AuthStatusTest(unittest.TestCase):
+    """The real _claude() -> fetch_auth_method() -> check() path, with only subprocess faked."""
+
+    def check_with_auth_output(self, out: str):
+        calls = []
+
+        def fake_run(cmd, **kwargs):
+            calls.append(cmd[1:])
+            body = out if cmd[1] == "auth" else '{"result": "x"}'
+            return mock.Mock(returncode=0, stdout=body, stderr="")
+
+        with mock.patch.object(usage.subprocess, "run", side_effect=fake_run):
+            result = usage.check()
+        return result, calls
+
+    def test_asks_for_json_explicitly(self):
+        _, calls = self.check_with_auth_output('{"authMethod": "claude.ai"}')
+        self.assertIn(["auth", "status", "--json"], calls)
+
+    def test_json_auth_status_reaches_decide(self):
+        (verdict, reason), _ = self.check_with_auth_output('{"authMethod": "claude.ai"}')
+        # the faked /usage text has no subscription line, so decide() ran and stopped on that
+        self.assertEqual(verdict, usage.STOP)
+        self.assertIn("using your subscription", reason)
+
+    def test_text_auth_status_stops_instead_of_waiting_forever(self):
+        (verdict, reason), _ = self.check_with_auth_output("Logged in\nMethod: claude.ai\n")
+        self.assertEqual(verdict, usage.STOP)
+        self.assertIn("auth check failed", reason)
+
+    def test_failing_auth_command_still_waits(self):
+        failed = mock.Mock(returncode=1, stdout="", stderr="network")
+        with mock.patch.object(usage.subprocess, "run", return_value=failed):
+            self.assertEqual(usage.check()[0], usage.WAIT)
+
+
 class NotifyChangeTest(unittest.TestCase):
     def test_notifies_once_per_pause_and_once_on_resume(self):
         with (
@@ -100,6 +154,15 @@ class ExplainTest(unittest.TestCase):
             )
         with mock.patch.dict(usage.os.environ, {"LOOP_NOTIFY_LANG": "fa"}):
             self.assertIn("سهمیه‌ی ۵ ساعته به 91٪", usage.explain(over))
+
+    def test_explains_the_fable_line_too(self):
+        text = usage_text(10, 10).replace("Fable): 0%", "Fable): 96%")
+        _, over = usage.decide(text, OK_AUTH, {usage.FABLE_RUN_ENV: "1"})
+        with mock.patch.dict(usage.os.environ, {"LOOP_NOTIFY_LANG": "en"}):
+            self.assertEqual(
+                usage.explain(over),
+                "The Fable weekly limit is at 96% (line 95%); it resets Oct 15, 12am (Europe/Berlin).",
+            )
 
 
 if __name__ == "__main__":

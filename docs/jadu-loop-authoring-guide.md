@@ -54,7 +54,7 @@ Some subtasks — a visually significant redesign, a payment-flow change, anythi
 
 The best-practice variant runs the same file, but it never pauses for a `review-checkpoint` — it self-reviews and continues — and it resolves gaps instead of stopping. Write the file so its decisions land where you want them:
 
-- **Need a real stop?** Use `TYPE: hard-stop`. It is the only subtask type that pauses this variant; a `review-checkpoint` or an `ACTION` that says "wait for X" does not.
+- **Need a real stop?** Use `TYPE: hard-stop`. It is the only subtask type that pauses this variant; a `review-checkpoint` or an `ACTION` that says "wait for X" does not. Keep it for what the loop cannot do or must not decide (a paid call, a destructive action, a credential, an install its allowlist cannot run), with the exact command; a design or architecture choice is a decision, not a hard stop.
 - **Name the production marker** in the Briefing (e.g. "production = `ENVIRONMENT=production` in `.env`"). The loop checks it every run and refuses to run against production.
 - **Name every dev/sandbox target** the subtasks may reach (a dev worker URL, a sandbox payment API). An unnamed target counts as live and blocks.
 - **Name the project's test command** in the Briefing. Self-review re-runs it at every `review-checkpoint`.

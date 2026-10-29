@@ -14,5 +14,6 @@ Thumbs.db
 # Secrets
 .env
 
-# Python
+# Python bytecode
 __pycache__/
+*.pyc

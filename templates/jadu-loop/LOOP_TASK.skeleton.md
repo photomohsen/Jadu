@@ -35,6 +35,19 @@ TYPE values in use:
                        (jadu-loop treats this exactly like a blocked VERIFY:
                        STATUS -> blocked, and it stops)
   - finalize          push the branch + open a PR; NEVER merges
+  - hard-stop         jadu-loop-best-practice only: the one forced pause in
+                       that variant. Use it only for what the loop cannot do
+                       or must not decide (a paid call, a destructive action,
+                       a credential, an install its allowlist cannot run),
+                       with the exact command. Never for a design choice.
+
+jadu-loop-best-practice extras (plain jadu-loop ignores them):
+  - NEXT: <task file> in the Briefing names the task that builds on this one
+    (queued only with GRANT: advance; see the skill's step 3).
+  - The loop appends a "## Decisions" section (and "## Skipped" when needed)
+    at the end of this file; do not write them yourself.
+  - Queued files live in LOOP_TASK_QUEUE/<nnn>-<issue>-<slug>.md, numbered
+    010, 020, ... so name order is run order and a fix can slot in (015).
 
 ACTION must be fully self-contained: exact file(s), exact command(s), no
 research needed. If executing it requires reading a file the ACTION doesn't
