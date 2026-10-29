@@ -74,7 +74,7 @@ cp -R .codex/skills/jadu-* ~/.codex/skills/
 4. **قبل از نوشتن اولین تسک واقعی، حتماً [`docs/jadu-loop-authoring-guide.md`](docs/jadu-loop-authoring-guide.md) را بخوانید.** هر قانون آن مربوط به یک باگ واقعی است که در یک اجرای بدون‌نظارت رخ داده — کوتاه است، و نخواندنش یعنی همان باگ‌ها دوباره تکرار می‌شوند.
 5. یک دایرکتوری tracked به نام `LOOP_TASK_ARCHIVE/` بسازید (فایل‌های تسک تمام‌شده به آن‌جا منتقل می‌شوند) و `.loop_state/` را gitignore کنید (فقط وضعیت محلی اجرا).
 6. قبل از اجرای loop، هر دستوری که زیروظایف‌تان اجرا می‌کنند را به allowlist شل agentتان اضافه کنید — loop نمی‌تواند مجوزهای خودش را وسط اجرا گسترش دهد.
-7. اجرا کنید: `python3 scripts/jadu-loop/check_loop_queue.py && python3 scripts/jadu-loop/check_usage_margin.py && claude -p "/jadu-loop" --permission-mode acceptEdits` — دستی، یا داخل یک حلقه‌ی خودتان (`while ... sleep N; done`) برای یک تسک طولانی و بدون‌نظارت. **بدون تصمیم صریح، این را به `cron` وصل نکنید** — به یادداشت‌های مربوط به `cron` در بخش سفارشی‌سازی/راهنمای مشترک مراجعه کنید.
+7. اجرا کنید: `python3 scripts/jadu-loop/check_loop_queue.py && python3 scripts/jadu-loop/check_usage_margin.py && claude -p "/jadu-loop" --permission-mode acceptEdits` — دستی، یا داخل یک حلقه‌ی خودتان (`while ... sleep N; done`) برای یک تسک طولانی و بدون‌نظارت. **بدون تصمیم صریح، این را به `cron` وصل نکنید** — به یادداشت‌های مربوط به `cron` در بخش سفارشی‌سازی/راهنمای مشترک مراجعه کنید. برای یک اجرای طولانی و بدون‌نظارت، `python3 scripts/jadu-loop/run_loop.py` حلقه را خودش اجرا می‌کند: به‌جای مصرف اعتبار اضافه (usage credits)، صبر می‌کند تا سقف ۵ساعته/هفتگی ریست شود و بعد ادامه می‌دهد (به `scripts/jadu-loop/README.md` مراجعه کنید).
 
 ### نسخه‌ی best practice (اختیاری)
 

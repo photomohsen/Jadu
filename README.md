@@ -78,7 +78,7 @@ For projects that use multiple agents, keep an `AGENTS.md` file in the project r
 4. **Read [`docs/jadu-loop-authoring-guide.md`](docs/jadu-loop-authoring-guide.md) before writing your first real task.** Every rule in it maps to a bug that actually shipped in an unattended run — it's short, and skipping it is how those bugs happen again.
 5. Create a tracked `LOOP_TASK_ARCHIVE/` directory (completed task files move there) and gitignore `.loop_state/` (local run state only).
 6. Add whatever commands your subtasks will run to your agent's shell allowlist *before* running the loop — it can't expand its own permissions mid-run.
-7. Run it: `python3 scripts/jadu-loop/check_loop_queue.py && python3 scripts/jadu-loop/check_usage_margin.py && claude -p "/jadu-loop" --permission-mode acceptEdits` — by hand, or wrapped in your own `while ... sleep N; done` loop for a long unattended task. **Do not wire this to `cron` unless you've deliberately decided to** — see the Customization/Repository-rules notes on cron below.
+7. Run it: `python3 scripts/jadu-loop/check_loop_queue.py && python3 scripts/jadu-loop/check_usage_margin.py && claude -p "/jadu-loop" --permission-mode acceptEdits` — by hand, or wrapped in your own `while ... sleep N; done` loop for a long unattended task. **Do not wire this to `cron` unless you've deliberately decided to** — see the Customization/Repository-rules notes on cron below. For a long unattended run, `python3 scripts/jadu-loop/run_loop.py` does the looping for you: it waits for the 5-hour/weekly limits to reset instead of running into usage credits (see `scripts/jadu-loop/README.md`).
 
 ### Best-practice variant (opt-in)
 
