@@ -55,7 +55,7 @@ python3 scripts/jadu-loop/check_loop_queue.py --queue \
 
 Use your CLI's "auto-approve edits, keep shell commands allowlisted" mode (Claude Code: `claude -p "/jadu-loop-best-practice --task" --model opus --permission-mode acceptEdits`), never a flag that skips all approvals: shell commands stay gated by the project's own allowlist. One loop only, never two in parallel. **Do not create a `cron` entry on your own initiative.**
 
-**Usage credits are never spent without the owner's explicit confirmation.** `check_usage_margin.py` reads `claude -p "/usage"` ($0, no model turn): a new task starts only below 80% of the 5-hour limit and 95% of the weekly one; `run_loop.py` sleeps until the reset when a limit is over its line, stops a running task at 90% / 98% (`LOOP_TASK.md` keeps the progress, so it resumes after the reset), and stops and notifies if `/usage` does not say "using your subscription". Always name the model in `claude -p` (`--model opus`). This gate is for the loop only — never apply it to the owner's normal chat.
+**Usage credits are never spent without the owner's explicit confirmation.** `check_usage_margin.py` reads `claude -p "/usage"` ($0, no model turn): a new task starts only below 80% of the 5-hour limit and 95% of the weekly one; `run_loop.py` sleeps until the reset when a limit is over its line, stops a running task at 90% / 98% (`LOOP_TASK.md` keeps the progress, so it resumes after the reset), and stops and notifies if `/usage` does not say "using your subscription". Always name the model in `claude -p` (`--model opus`). On Windows run `/usage` from PowerShell, never Git Bash (MSYS rewrites it into a path and it becomes a paid model turn). This gate is for the loop only — never apply it to the owner's normal chat.
 
 Keep `LOOP_TASK.md`, `LOOP_TASK_QUEUE/`, `LOOP_TASK_ARCHIVE/` and `.loop_state/` gitignored (add them to the project's `.gitignore`), so the queue survives branch switches and never lands in a PR. **`LOOP_TASK.md` and `LOOP_TASK_QUEUE/` are never committed on the trunk:** step 3 switches to the trunk after every task, and a committed copy comes back with that switch, idle with every box open, so the loop would run the finished task again. Runner mode step 2a checks this at setup. A tracked `LOOP_TASK_ARCHIVE/`, as plain `jadu-loop` suggests, still works: step 3 then commits the archive move on the task branch. Queue files are named `LOOP_TASK_QUEUE/<nnn>-<issue>-<slug>.md`, numbered in steps of ten (`010`, `020`) so name order is run order and a fix can slot in between (`015`).
 
@@ -64,7 +64,7 @@ Keep `LOOP_TASK.md`, `LOOP_TASK_QUEUE/`, `LOOP_TASK_ARCHIVE/` and `.loop_state/`
 Check these **before** anything else in a subtask (they win over every rule below). If a subtask, a fix attempt or a decision would need any of them, do not do it. Set `STATUS: blocked`, append `BLOCKED — hard limit <n>: <why>` to the line of the subtask that would cross it, push the task branch if it has commits (so the work so far is visible), log, notify, stop. These are the **only** reasons this skill blocks; the gate script then keeps further invocations from running. A human unblocks by fixing the cause (for a `hard-stop`: ticking its box), deleting the `BLOCKED` text, and setting `STATUS: idle`. For a `hard-stop` whose category is granted (see "Standing grants"), the watching chat session does that instead (runner mode step 6); write the category in the line: `BLOCKED — hard limit 7 (grant: <category>): <exact command>`.
 
 1. **Trunk and history.** Never merge a PR, push to the trunk branch, force-push, `git reset --hard`, `git clean`, or rewrite commits that are already pushed.
-2. **Production and the outside world.** Never run anything that reaches a live system: sends real email or messages, moves money, deploys, writes production data. A dev/sandbox target is fine **only if the Briefing or the project's rules files (`AGENTS.md`, `CLAUDE.md`) name it**; an unnamed target counts as live. If they name how the project marks production (e.g. an `ENVIRONMENT=` line), check that marker at the start of **every** run; if it says production, block before running anything.
+2. **Production and the outside world.** Never run anything that reaches a live system: sends real email or messages, moves money, deploys, writes production data. A dev/sandbox target is fine **only if the Briefing or the project's rules files (`AGENTS.md`, `CLAUDE.md`) name it**; an unnamed target counts as live. If they name how the project marks production (e.g. an `ENVIRONMENT=` line), check that marker at the start of **every** run; if it says production, block before running anything. The loop's own notification (step 5, through `notify_telegram.py` to the chat the owner configured) is not covered by this limit: send it.
 3. **Secrets.** Never read, print, edit or commit `.env`, keys or tokens. Reading only the single production-marker line named as above is the one exception.
 4. **Permissions.** Never add to the allowlist, edit agent settings, or use a bypass flag. (This binds the loop's `--task` runs. Only the watching chat session may add a narrow entry, and only under `GRANT: allowlist`.)
 5. **Conflicts.** A merge or rebase conflict: `git rebase --abort` / `git merge --abort`, then block.
@@ -126,12 +126,18 @@ These steps run only in `--task` mode (see Invocation). Without `--task`, start 
 
 Read `LOOP_TASK.md`: `STATUS`, `BRANCH`, `## Briefing`, the first unchecked (`- [ ]`) subtask not marked `BLOCKED` or `SKIPPED`. `STATUS` other than `idle` → log and stop. Check the production marker (hard limit 2). No `LOOP_TASK.md` but `LOOP_TASK_QUEUE/` has `*.md` files → promote one (step 3) and stop.
 
+- **Leftover changes:** uncommitted changes at the start of a run are the open subtask's partial work from a run that was stopped (by the usage watchdog or the time cap). Keep them and finish that subtask from there; never stash or discard them, and never commit them under another subtask.
+- **`TIMEOUT` marks** are written by the runner when a run went 30 minutes without a commit or a change to `LOOP_TASK.md`. `TIMEOUT 1` → resume the subtask with a fresh time budget (rule 1). `TIMEOUT 2` → Skip it at once by rule 8 (`SKIPPED — timed out twice`), log a decision, continue.
+
 ### 2. Process subtasks in sequence
 
-Track wall-clock time. For each open subtask, top to bottom:
+For each open subtask, top to bottom:
 
-1. **Group / time:** a `GROUP:` runs back-to-back in one invocation. Each subtask gets ~10 minutes (or the limit the Briefing names); one whose `VERIFY` still fails after that is Skipped (rule 8), naming the time limit as its last failure. The run itself has no time cap: keep going until no open subtask is left, a hard limit stops it, or the usage gate stops it.
-1a. **Usage gate before every subtask:** run `python3 scripts/jadu-loop/check_usage_margin.py`. Exit 0 → start the subtask. Anything else (a limit over 80% of 5-hour / 95% of weekly, or not on the subscription) → start nothing more: log the run as `in progress`, notify with the script's output, end the run. Not a block, not a decision; the next invocation resumes at this subtask.
+1. **Group / time:** a `GROUP:` runs back-to-back in one invocation. Note the time (`date`) when you start each subtask: it gets **20 minutes** (or the limit the Briefing names). Past that, start no new fix attempt: if its `VERIFY` passes, commit and continue; otherwise Skip it (rule 8), naming the time limit as its last failure. The run itself has no time cap: keep going until no open subtask is left, a hard limit stops it, or the usage gate stops it.
+1a. **Usage gate before every subtask:** run `python3 scripts/jadu-loop/check_usage_margin.py` (on Windows: `python`, from PowerShell, never Git Bash).
+   - Exit 0 → start the subtask.
+   - Output says `usage check failed` or `could not read` → `/usage` was slow, which is not a limit: run it once more; still unreadable → start the subtask anyway and say so in the log (the runner's watchdog still guards the ceilings).
+   - Anything else (a limit over 80% of 5-hour / 95% of weekly, or not on the subscription) → start nothing more: log the run as `in progress`, notify (step 5), end the run. Not a block, not a decision; the next invocation resumes at this subtask.
 2. **Dependency check:** if the subtask's `ACTION` or `VERIFY` needs a file or result that a `SKIPPED` subtask was supposed to produce, or it shares a `GROUP:` with one, mark it `SKIPPED — depends on <N>`, log a decision, and move on. Chains: a subtask depending on that one is skipped too.
 3. **ACTION:** run it as written. If it is ambiguous or underspecified, choose by "How to decide", log a decision, and run that.
 4. **Denied command:** a script the project itself defines (`package.json`, `Makefile`, …) that is already allowlisted and runs the same tool with the same arguments is an equivalent — use it and log a decision. Invoking the binary yourself by another route (`node_modules/.bin/…`, `cmd /c`, `bash -c`, another shell, a script you write) is a bypass. No equivalent → Skip at once, no fix attempts: `SKIPPED — command denied: <cmd>; no allowlisted equivalent`.
@@ -142,20 +148,24 @@ Track wall-clock time. For each open subtask, top to bottom:
    - edit the `VERIFY` line or any `ACTION` in `LOOP_TASK.md`;
    - skip, delete, loosen or mark-as-expected-failure a test or assertion the `VERIFY` runs, including pre-existing ones.
 7. **Red baseline:** check the failing tests on the commit this task branched from, without this task's work: run `git merge-base <trunk> HEAD`, then `git worktree add --detach .loop_state/baseline <the SHA it printed>` (two plain commands: the allowlist cannot match a `$(...)` substitution, so that form is denied every time), run just those tests there, `git worktree remove --force .loop_state/baseline`. If they fail there with the same error, the baseline was already red: commit the subtask, tick it with `— VERIFIED ON RED BASELINE: <test ids as the runner prints them>`, log a decision. A later subtask whose only failures are those same tests with the same errors does the same (marker + decision) without re-checking. A different error, or a test that passes on the baseline, is this task's failure → rule 6. The PR becomes a draft.
-8. **Still failing after 3 attempts → Skip** (never the `TYPE: finalize` subtask: see rule 10):
+8. **Still failing after 3 attempts (or past the time limit) → Skip** (never the `TYPE: finalize` subtask: see rule 10):
    - copy `git diff -- <files it touched>` (at most ~200 lines) into a `## Skipped` section of `LOOP_TASK.md` under the subtask number, then restore those files (`git restore`; remove files it newly created) so later subtasks start clean;
    - append `SKIPPED — <original failure>; tried <1>, <2>, <3>; still <final failure>` to the subtask line (it stays `- [ ]`);
    - log a decision, continue with the next independent subtask.
-9. **`TYPE: review-checkpoint` → self-review instead of pausing:** read the full branch diff (`git diff <trunk>...HEAD`), compare it against what the checkpoint's `ACTION` says a human should look at and against the Briefing, and re-run the test command the Briefing names (none named → re-run every completed subtask's `VERIFY`). Where the check needs human senses you lack (looking at a rendered page), use an objective proxy: any check or render/screenshot tool the project already has, run at the viewports the `ACTION` or the project's rules name; or a read-only measuring script you write outside the repo (it may load pages, screenshot and time them, never write to the repo); else a structural comparison against the reference the `ACTION` names and say in the decision that a human look is still recommended. Problems found → fix them within rule 6's limits, re-review; still wrong after 3 attempts → Skip. Clean → tick the box, log a decision with what you reviewed.
-10. **`TYPE: finalize`:** `git push`, then open the PR — **as a draft** if any subtask was `SKIPPED`, verified on a red baseline, or any decision says a human look is still recommended. The PR body ends with `## Decisions` (verbatim), `## Skipped` (verbatim, diffs in collapsed `<details>` blocks), and what was verified where. Never merge. **Finalize is never skipped**, because a skipped finalize leaves the task open forever and the queue never moves: if the push or the PR still fails after 3 attempts (or the project has no remote), write the PR body to `.loop_state/pr-<BRANCH with / replaced by ->.md`, log a decision naming the failure, tick the box, and go on to step 3.
+9. **`TYPE: review-checkpoint` → self-review instead of pausing:** read the full branch diff (`git diff <trunk>...HEAD`), compare it against what the checkpoint's `ACTION` says a human should look at and against the Briefing, and re-run the test command the Briefing names (none named → re-run every completed subtask's `VERIFY`). Where the check needs human senses you lack (looking at a rendered page), use an objective proxy: any check or render/screenshot tool the project already has, run at the viewports the `ACTION` or the project's rules name; or a read-only measuring script you write in a scratch directory outside the repo (it may load pages, screenshot and time them, never write to the repo); else a structural comparison against the reference the `ACTION` names and say in the decision that a human look is still recommended. Problems found → fix them within rule 6's limits, re-review; still wrong after 3 attempts → Skip. Clean → tick the box, log a decision with what you reviewed.
+10. **`TYPE: finalize`:** `git push`, then open the PR — **as a draft** if any subtask was `SKIPPED`, verified on a red baseline, or any decision says a human look is still recommended. If the branch already has an open PR (`gh pr view --json url,state`), update that PR's body instead of opening a second one. The PR body ends with `## Decisions` (verbatim), `## Skipped` (verbatim, diffs in collapsed `<details>` blocks), and what was verified where. Never merge. **Finalize is never skipped**, because a skipped finalize leaves the task open forever and the queue never moves: if the push or the PR still fails after 3 attempts (or the project has no remote), write the PR body to `.loop_state/pr-<BRANCH with / replaced by ->.md`, log a decision naming the failure, tick the box, and go on to step 3.
+
+**Before the run ends**, however it ends: stop every preview server, watcher or background process this run started.
 
 ### 3. Finish the task, then promote the next one
 
-When the finalize subtask is done: move `LOOP_TASK.md` to `LOOP_TASK_ARCHIVE/<today>-<BRANCH with / replaced by ->.md` (its Decisions and Skipped sections go with it). If git tracks `LOOP_TASK_ARCHIVE/`, commit the new archive file on the task branch and push it (untracked: just move it).
+When the finalize subtask is done: move `LOOP_TASK.md` to `LOOP_TASK_ARCHIVE/<today>-<BRANCH with / replaced by ->.md` (its Decisions and Skipped sections go with it; if that name exists, add the task name). If git tracks `LOOP_TASK_ARCHIVE/`, commit the new archive file on the task branch and push it (untracked: just move it).
 
 **Phase chaining:** if the queue is empty, the grants file has `GRANT: advance`, the Briefing names the next task file (a `NEXT:` line, e.g. `NEXT: phases/phase-3.md`), and that file already says `STATUS: idle`, copy it to `LOOP_TASK_QUEUE/` and log a decision line. Never change a draft's status to make it run: a file that is still a draft is not queued; say in the report's next-steps section that it needs `/jadu-loop-prepare` first. The next phase builds on this one's unmerged work, so its first subtask must name this task's branch as its base (`git switch -c <new> <this branch>`); if it does not, add that to its Briefing as a decision. A project rule that forbids advancing wins: then follow it and name the rule in the report's problems section.
 
 Then `git switch <trunk>`, so the next task never branches off unmerged work by accident. **A `LOOP_TASK.md` that is there right after the switch is stale:** the finished one was just archived, so this is the trunk's committed copy (see Invocation). Never run, promote over or delete it: set its `STATUS: blocked`, add a line `BLOCKED — hard limit 1: LOOP_TASK.md is committed on <trunk>; untrack it in a setup PR (runner mode step 2a)`, log, notify, end the run. Otherwise, if `LOOP_TASK_QUEUE/` contains `*.md` files, move the first one in name order to `LOOP_TASK.md` (untracked files, so this is a plain move: never commit on the trunk), make sure it says `STATUS: idle`, name it in the log and the notification, and **end this run**. The next invocation starts it with a fresh context (its first subtask creates its own branch), so nothing from the finished task bleeds into the new one.
+
+**A promoted task that builds on this one** (its `BRANCH:` is this same branch, or its Briefing says it builds on this task's work) must start from this branch, not the trunk: from the trunk it would leave out this branch's unmerged changes, and two branches that edit the same files separately conflict when the second PR is merged. If its first subtask does not already start from this branch (`git switch <this branch>`, or `git switch -c <new> <this branch>`), add that to its Briefing and log a decision.
 
 ### 3a. The final report has no open questions
 
@@ -175,7 +185,7 @@ Append exactly one line to `logs/loop.log` (never rewrite the file), in exactly 
 
 ### 5. Notify
 
-Never send a test message to the notification channel: it is the owner's real channel.
+Never send a test message to the notification channel (owner's rule 2026-10-18): it is the owner's real channel.
 
 Do not call `notify_telegram.py` yourself. Write the message to `.loop_state/telegram.md` (UTF-8, overwrite). `run_loop.py` sends it right after this run ends and deletes the file, so the message goes through the runner's environment, which holds the bot token; a run by hand without the runner has it sent at the next runner start. A failed send is kept as `.loop_state/telegram-unsent-*.md` and logged in `.loop_state/runs.log`. The owner reads these without the code open. Write **only**:
 - **one task report when the task is finished** (finalize done, archived, next promoted);
@@ -206,8 +216,8 @@ Write in the language the Briefing or the project's rules files use, else Englis
 📄 Full report
 • <PR url, or the `.loop_state/pr-*.md` path> (<draft / ready>)
 
-⏭ Next
-• <next subtask / the task promoted from the queue / queue empty>
+➡️ Next
+• <next subtask / the task promoted from the queue / nothing queued>
 
 🙋 Waiting for you: <what only the owner can do, with the exact command or link; or "nothing">
 • Recommended: <the loop's recommended choice for each item, and one plain line on why>  ← always, for every item
@@ -221,7 +231,7 @@ A hard-limit block starts with `⛔ Loop stopped`, then the same sections: which
 - Never make a failing `VERIFY` pass by changing the check instead of the code.
 - Never touch `TASKS.md` or `WORKLOG.md`.
 - Never have two active task files: promotion happens only after the current one is archived.
-- Never run without the usage gate, never into usage credits without the owner's explicit confirmation.
+- Never run without the usage gate, never with a Fable model in `-p` unless the owner passed `--allow-fable`, never into usage credits without the owner's explicit confirmation.
 - Never leave a decision out of the log because it seemed small.
 
 ## Common mistakes
@@ -235,6 +245,9 @@ A hard-limit block starts with `⛔ Loop stopped`, then the same sections: which
 | "It's only one real email / one small payment." | Anything that reaches a live system is hard limit 2. |
 | "The ACTION says 'stop for a human', so I'll stop." | Only hard limits and `TYPE: hard-stop` stop. Self-review it. |
 | "I'll ask the owner about this in the report." | Decide it, log it, report it as Decided (step 3a). Questions are only for hard limits and rule 4a's human-only list. |
+| "One more fix attempt; it's been 25 minutes but I'm close." | 20 minutes is the budget. Commit if `VERIFY` passes, else Skip and move on. |
+| "These uncommitted changes look stray; I'll stash them." | They are the open subtask's partial work from a stopped run. Finish it from there. |
+| "/usage timed out, so I'll end the run to be safe." | A slow `/usage` is not a limit. Retry once, then continue; the watchdog guards the ceilings. |
 | "Too small to log." | Every decision gets a line. The log is the human's only window. |
 | "This is a design / architecture / security choice, so the owner should pick." | Decide it by "How to decide" (best practice), name the source, record it. Only rule 4a's human-only list waits. |
 | "The audit / upgrade / install is the owner's step." | Run what the loop can; a granted step is done by the loop or the watching session; decide the verdict. |

@@ -94,6 +94,38 @@ class RunLoopTest(unittest.TestCase):
         sequence = [self.FAILED, self.FAILED, (usage.GO, "ok"), self.FAILED, self.FAILED]
         self.assertIsNone(self.watch(sequence))
 
+    def test_no_progress_hits_the_hard_cap(self):
+        self.fake_claude("import time; time.sleep(30)")
+        started = time.monotonic()
+        with (
+            mock.patch.object(run_loop, "HARD_CAP_SECONDS", 0.5),
+            mock.patch.object(usage, "check", return_value=(usage.GO, "ok")),
+        ):
+            self.assertEqual(run_loop.run_task("/jadu-loop"), run_loop.TIMEOUT)
+        self.assertLess(time.monotonic() - started, 15)
+
+    def test_timeout_marks_the_open_subtask_once_then_twice(self):
+        task = self.root / "LOOP_TASK.md"
+        task.write_text(
+            "STATUS: idle\n\n- [x] 1\n- [ ] 2 — SKIPPED — broke\n- [ ] 3\n  TYPE: code\n- [ ] 4\n",
+            encoding="utf-8",
+        )
+        self.assertEqual(run_loop.mark_timeout(), "TIMEOUT 1")
+        self.assertIn("- [ ] 3 — TIMEOUT 1\n", task.read_text(encoding="utf-8"))
+        self.assertEqual(run_loop.mark_timeout(), "TIMEOUT 2")
+        self.assertIn("- [ ] 3 — TIMEOUT 2\n  TYPE: code\n- [ ] 4\n", task.read_text(encoding="utf-8"))
+
+    def test_killed_runs_without_progress_count_as_stalls(self):
+        (self.root / "LOOP_TASK.md").write_text("STATUS: idle\n\n- [ ] 1\n", encoding="utf-8")
+        with (
+            mock.patch.object(usage, "check", return_value=(usage.GO, "ok")),
+            mock.patch.object(usage, "notify"),
+            mock.patch.object(run_loop, "run_task", return_value="5-hour at 90%") as run_task,
+            mock.patch.object(run_loop.time, "sleep"),
+        ):
+            self.assertEqual(run_loop.main([]), 1)
+        self.assertEqual(run_task.call_count, run_loop.MAX_STALLS)
+
     def test_loop_exits_when_the_gate_says_stop(self):
         (self.root / "LOOP_TASK.md").write_text(
             "STATUS: idle\n\n- [ ] 1. Do it\n", encoding="utf-8"
@@ -262,6 +294,17 @@ class RunLoopTest(unittest.TestCase):
         self.assertFalse(run_loop.OUTBOX.exists())
         kept = list(self.root.glob("telegram-unsent-*.md"))
         self.assertEqual([k.read_text(encoding="utf-8") for k in kept], ["task done"])
+
+    def test_loop_uses_the_session_model_and_effort_but_never_fable(self):
+        (self.root / "LOOP_TASK.md").write_text("STATUS: idle\n\n- [ ] 1\n", encoding="utf-8")
+        for model, want in (("claude-opus-5-5", "claude-opus-5-5"), ("claude-fable-5-1", run_loop.MODEL)):
+            with (
+                mock.patch.object(usage, "check", return_value=(usage.GO, "ok")),
+                mock.patch.object(run_loop, "run_task", return_value=None) as run_task,
+                mock.patch.object(run_loop.time, "sleep"),
+            ):
+                run_loop.main(["--max-runs", "1", "--model", model, "--effort", "xhigh"])
+            run_task.assert_called_once_with("/jadu-loop", want, "xhigh")
 
 
 if __name__ == "__main__":

@@ -11,6 +11,9 @@ Thumbs.db
 .claude/scheduled_tasks.lock
 .claude/settings.local.json
 
+# Secrets
+.env
+
 # Python bytecode
 __pycache__/
 *.pyc

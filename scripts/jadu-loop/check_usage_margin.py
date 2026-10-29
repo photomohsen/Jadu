@@ -64,6 +64,68 @@ REPO_ROOT = Path.cwd()
 FLAG_FILE = REPO_ROOT / ".loop_state" / "usage_margin_hit"
 NOTIFY_SCRIPT = Path(__file__).resolve().parent / "notify_telegram.py"
 
+try:  # the same .env notify_telegram.py reads, for LOOP_NOTIFY_LANG
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
+# Notifications are read on a phone by someone without the code open: plain words, no raw
+# error text (that stays in .loop_state/runs.log). LOOP_NOTIFY_LANG picks the language.
+MESSAGES = {
+    "en": {
+        "unreadable": "The usage check did not answer (`/usage` was slow or failed).",
+        "over": "The {name} limit is at {pct}% (line {line}%); it resets {resets}.",
+        "names": {"5-hour": "5-hour", "weekly": "weekly", "weekly-fable": "Fable weekly"},
+        "ok": "Usage now: 5-hour {a}%, weekly {b}%.",
+        "other": "Reason: {reason}",
+        "resumed": "▶️ The loop is running again.\n{why}",
+        "stopped": "⛔ The loop stopped and will not continue until you act.\n{why}",
+        "wait_unreadable": "⏸ The loop waits a few minutes.\n{why}\n"
+        "It checks again every 10 minutes and continues by itself. Nothing to do.",
+        "wait_limit": "⏸ The loop waits for the limit to reset.\n{why}\n"
+        "Then it continues by itself. Nothing to do.",
+        "killed": "⏸ I stopped the unfinished run.\n{why}\nEverything finished is committed; "
+        "I continue from the same subtask when the limit allows. Nothing to do.",
+        "timeout": "⏸ I stopped a run that made no progress for {minutes} minutes.\n"
+        "Its subtask is marked `{mark}`: one timeout is retried, a second one skips it "
+        "(jadu-loop blocks instead). Nothing to do.",
+        "stalled": "⛔ The loop stopped and needs you.\n"
+        "It ran {n} times in a row without moving a subtask forward, so something is stuck.\n"
+        "Details are in `.loop_state/runs.log`.",
+    },
+    "fa": {
+        "unreadable": "بررسی مصرف جواب نداد (دستور `/usage` کند بود یا خطا داد).",
+        "over": "{name} به {pct}٪ رسیده (حد: {line}٪)؛ دوباره پر می‌شود: {resets}.",
+        "names": {"5-hour": "سهمیه‌ی ۵ ساعته", "weekly": "سهمیه‌ی هفتگی", "weekly-fable": "سهمیه‌ی هفتگی Fable"},
+        "ok": "مصرف الان: ۵ ساعته {a}٪، هفتگی {b}٪.",
+        "other": "دلیل: {reason}",
+        "resumed": "▶️ loop دوباره راه افتاد.\n{why}",
+        "stopped": "⛔ loop متوقف شد و تا تو کاری نکنی ادامه نمی‌دهد.\n{why}",
+        "wait_unreadable": "⏸ loop چند دقیقه صبر می‌کند.\n{why}\n"
+        "هر ۱۰ دقیقه دوباره امتحان می‌کند و خودش ادامه می‌دهد. کاری لازم نیست.",
+        "wait_limit": "⏸ loop صبر می‌کند تا سهمیه دوباره پر شود.\n{why}\n"
+        "بعد خودش ادامه می‌دهد. کاری لازم نیست.",
+        "killed": "⏸ کار نیمه‌کاره را متوقف کردم.\n{why}\nهر چه تمام شده بود commit شده؛ "
+        "وقتی سهمیه اجازه داد، از همان زیرکار ادامه می‌دهم. کاری لازم نیست.",
+        "timeout": "⏸ اجرایی را که {minutes} دقیقه هیچ پیشرفتی نداشت متوقف کردم.\n"
+        "زیرکارش علامت `{mark}` گرفت: بار اول دوباره امتحان می‌شود، بار دوم کنار گذاشته می‌شود "
+        "(در jadu-loop به‌جایش متوقف می‌شود). کاری لازم نیست.",
+        "stalled": "⛔ loop متوقف شد و به تو نیاز دارد.\n"
+        "{n} بار پشت سر هم اجرا شد و هیچ زیرکاری جلو نرفت، پس چیزی گیر کرده.\n"
+        "جزئیات در `.loop_state/runs.log` است.",
+    },
+}
+
+
+def _lang() -> dict:
+    return MESSAGES.get(os.environ.get("LOOP_NOTIFY_LANG", "en"), MESSAGES["en"])
+
+
+def say(key: str, **fields) -> str:
+    return _lang()[key].format(**fields)
+
 
 def _claude(*args: str) -> str:
     env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
@@ -157,6 +219,22 @@ def unreadable(reason: str) -> bool:
     return reason.startswith(("usage check failed", "could not read"))
 
 
+def explain(reason: str) -> str:
+    """The reason in plain words for the notification; raw details stay in runs.log."""
+    if unreadable(reason):
+        return say("unreadable")
+    over = re.findall(r"(5-hour|weekly-fable|weekly) at (\d+)% \(line (\d+)%, resets ([^)]*\)?)", reason)
+    if over:
+        names = _lang()["names"]
+        return " ".join(
+            say("over", name=names[n], pct=p, line=line, resets=r) for n, p, line, r in over
+        )
+    m = re.match(r"ok: 5-hour (\d+)%, weekly (\d+)%", reason)
+    if m:
+        return say("ok", a=m[1], b=m[2])
+    return say("other", reason=reason)
+
+
 def notify(message: str) -> None:
     if NOTIFY_SCRIPT.exists():
         subprocess.run(
@@ -169,19 +247,17 @@ def notify_change(verdict: int, reason: str) -> None:
     if verdict == GO:
         if FLAG_FILE.exists():
             FLAG_FILE.unlink()
-            notify(f"usage back under the lines — jadu-loop resuming ({reason})")
+            notify(say("resumed", why=explain(reason)))
         return
     kind = "stop" if verdict == STOP else "wait"
     if not FLAG_FILE.exists() or FLAG_FILE.read_text(encoding="utf-8").strip() != kind:
         FLAG_FILE.parent.mkdir(parents=True, exist_ok=True)
         FLAG_FILE.write_text(kind + "\n", encoding="utf-8")
         if verdict == STOP:
-            msg = f"STOPPED, needs you: {reason}"
-        elif unreadable(reason):
-            msg = f"jadu-loop waiting, usage unreadable, retrying every {POLL_MINUTES} min: {reason}"
+            key = "stopped"
         else:
-            msg = f"jadu-loop waiting for the limit to reset: {reason}"
-        notify(msg)
+            key = "wait_unreadable" if unreadable(reason) else "wait_limit"
+        notify(say(key, why=explain(reason)))
 
 
 def main() -> None:
