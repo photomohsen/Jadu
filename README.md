@@ -16,6 +16,7 @@ A collection of AI-agent workflow skills for structured, productive project sess
 | Zad | `/jadu-zad` | `jadu-zad` skill | Project initialization wizard — asks setup questions once and writes project context files |
 | Payan | `/jadu-payan` | `jadu-payan` skill | Session end — inline close (no brief), updates docs/tasks, then commits and pushes automatically |
 | Loop | `/jadu-loop` | `jadu-loop` skill | **Opt-in, off by default.** Autonomous execution of pre-approved subtasks from `LOOP_TASK.md` — no per-step approval. See [Loop setup](#loop-setup-opt-in) below |
+| Loop (best practice) | `/jadu-loop-best-practice` | `jadu-loop-best-practice` skill | **Opt-in, off by default.** Same as Loop, but decides and records instead of pausing for a human; you review every decision in the PR. See [Best-practice variant](#best-practice-variant-opt-in) below |
 
 `jadu-tamam` was renamed to `jadu-payan`.
 
@@ -76,7 +77,16 @@ For projects that use multiple agents, keep an `AGENTS.md` file in the project r
 4. **Read [`docs/jadu-loop-authoring-guide.md`](docs/jadu-loop-authoring-guide.md) before writing your first real task.** Every rule in it maps to a bug that actually shipped in an unattended run — it's short, and skipping it is how those bugs happen again.
 5. Create a tracked `LOOP_TASK_ARCHIVE/` directory (completed task files move there) and gitignore `.loop_state/` (local run state only).
 6. Add whatever commands your subtasks will run to your agent's shell allowlist *before* running the loop — it can't expand its own permissions mid-run.
-7. Run it: `python3 scripts/jadu-loop/check_loop_queue.py && python3 scripts/jadu-loop/check_usage_margin.py && claude -p "/jadu-loop" --permission-mode acceptEdits` — by hand, or wrapped in your own `while ... sleep N; done` loop for a long unattended task. **Do not wire this to `cron` unless you've deliberately decided to** — see the Customization/Repository-rules notes on cron below.
+7. Run it: `python3 scripts/jadu-loop/check_loop_queue.py && python3 scripts/jadu-loop/check_usage_margin.py && claude -p "/jadu-loop" --permission-mode acceptEdits` — by hand, or wrapped in your own `while ... sleep N; done` loop for a long unattended task. **Do not wire this to `cron` unless you've deliberately decided to** — see the Customization/Repository-rules notes on cron below. For a long unattended run, `python3 scripts/jadu-loop/run_loop.py` does the looping for you: it waits for the 5-hour/weekly limits to reset instead of running into usage credits (see `scripts/jadu-loop/README.md`).
+
+### Best-practice variant (opt-in)
+
+`jadu-loop-best-practice` uses the same setup, task files and scripts. The difference: where `jadu-loop` stops and waits for you (a `review-checkpoint`, a `VERIFY` that fails twice, an unclear subtask, a finished task), it makes the best-practice decision, writes it to a `## Decisions` section in `LOOP_TASK.md`, and continues. You review everything once, in the PR: a subtask that still fails after three fix attempts is skipped and the PR opens as a draft, with the decisions and skipped subtasks listed in its body. Hard limits still block: it never merges, pushes to trunk, touches production or secrets, or expands its own permissions.
+
+- Install it like `jadu-loop` (step 1 above). Typed in a chat, `/jadu-loop-best-practice` starts `run_loop.py` detached and returns; the runner then works through the whole queue, one `claude -p "/jadu-loop-best-practice --task" --model opus --permission-mode acceptEdits` per run. Use that `--task` form in place of `/jadu-loop` in step 7 to run one task by hand.
+- Each subtask gets 20 minutes; a run that goes 30 minutes without a commit is stopped by the runner and its subtask marked `TIMEOUT 1` (retried) or `TIMEOUT 2` (skipped).
+- Optional queue: put further ready task files in `LOOP_TASK_QUEUE/`. Once a task's PR is open and it is archived, the next file (in name order) is promoted to `LOOP_TASK.md` and the following run starts it.
+- If the Briefing names how your project marks production (e.g. an `ENVIRONMENT=` line), the loop checks it first and refuses to run against production.
 
 ---
 

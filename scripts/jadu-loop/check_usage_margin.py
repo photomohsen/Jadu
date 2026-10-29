@@ -1,105 +1,237 @@
 #!/usr/bin/env python3
 """
-check_usage_margin.py — cheap, free pre-check gating jadu-loop invocations on
-a shared account's rate-limit/usage window. Queries `claude -p "/usage"`
-(headless, zero API cost for Claude Code's Max-plan usage command) and blocks
-if either the current-session or current-week (all models) percentage is at
-or above MARGIN_PERCENT. Notifies once per crossing (not every tick) and
-auto-clears once usage drops back under margin — no manual reset needed.
+check_usage_margin.py — free pre-check that keeps jadu-loop inside the plan's
+own limits, so it never runs into usage credits (extra usage) unasked.
 
-Fails closed: if the usage check itself can't be read (invocation error,
-unparseable output), this blocks and notifies rather than silently letting
-jadu-loop proceed on an unknown usage state.
+Queries `claude -p "/usage"` (headless, no model turn, $0) and answers one of:
+  GO   (exit 0) — every limit is under its line, run the next task
+  WAIT (exit 2) — a limit is at/over its line; sleep and check again later
+  STOP (exit 1) — something is wrong (not on the subscription, API key set,
+                  wrong login, usage unreadable); a human has to look
 
-This script assumes Claude Code's `/usage` output format. If you're running
-jadu-loop with a different agent CLI, either adapt fetch_usage_text()/
-parse_percentages() to that CLI's equivalent, or delete this pre-check from
-the invocation chain entirely — it's optional, not load-bearing.
+The 5-hour and weekly limits are judged separately, each with two lines:
+  start   — a new task starts only while usage is under this
+  ceiling — a task already running is stopped (by run_loop.py's watchdog) here
+The gap between them is room for a started task to finish. Usage only drops
+when a limit resets, so "back under the start line" means "it has reset".
+
+Notifies once per pause (not every tick) and once on resume.
 
 Usage:
     python3 scripts/jadu-loop/check_loop_queue.py \
       && python3 scripts/jadu-loop/check_usage_margin.py \
-      && claude -p "/jadu-loop"
+      && claude -p "/jadu-loop" --model opus
+    python3 scripts/jadu-loop/check_usage_margin.py --watch   # judge against the ceilings
 """
 
 import json
+import os
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-MARGIN_PERCENT = 80
+# name: (regex on the /usage text, start line %, ceiling %)
+LIMITS = {
+    "5-hour": (re.compile(r"Current session:\s*(\d+)% used(?:\s*·\s*resets\s*(.+))?"), 80, 90),
+    "weekly": (
+        re.compile(r"Current week \(all models\):\s*(\d+)% used(?:\s*·\s*resets\s*(.+))?"),
+        95,
+        98,
+    ),
+}
+SUBSCRIPTION_LINE = "using your subscription"
+
+GO, STOP, WAIT = 0, 1, 2
 
 REPO_ROOT = Path.cwd()
 FLAG_FILE = REPO_ROOT / ".loop_state" / "usage_margin_hit"
-NOTIFY_SCRIPT = REPO_ROOT / "scripts" / "jadu-loop" / "notify_telegram.py"
+NOTIFY_SCRIPT = Path(__file__).resolve().parent / "notify_telegram.py"
 
-SESSION_RE = re.compile(r"Current session:\s*(\d+)% used")
-WEEKLY_RE = re.compile(r"Current week \(all models\):\s*(\d+)% used")
+try:  # the same .env notify_telegram.py reads, for LOOP_NOTIFY_LANG
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
+# Notifications are read on a phone by someone without the code open: plain words, no raw
+# error text (that stays in .loop_state/runs.log). LOOP_NOTIFY_LANG picks the language.
+MESSAGES = {
+    "en": {
+        "unreadable": "The usage check did not answer (`/usage` was slow or failed).",
+        "over": "The {name} limit is at {pct}% (line {line}%); it resets {resets}.",
+        "names": {"5-hour": "5-hour", "weekly": "weekly"},
+        "ok": "Usage now: 5-hour {a}%, weekly {b}%.",
+        "other": "Reason: {reason}",
+        "resumed": "▶️ The loop is running again.\n{why}",
+        "stopped": "⛔ The loop stopped and will not continue until you act.\n{why}",
+        "wait_unreadable": "⏸ The loop waits a few minutes.\n{why}\n"
+        "It checks again every 10 minutes and continues by itself. Nothing to do.",
+        "wait_limit": "⏸ The loop waits for the limit to reset.\n{why}\n"
+        "Then it continues by itself. Nothing to do.",
+        "killed": "⏸ I stopped the unfinished run.\n{why}\nEverything finished is committed; "
+        "I continue from the same subtask when the limit allows. Nothing to do.",
+        "timeout": "⏸ I stopped a run that made no progress for {minutes} minutes.\n"
+        "Its subtask is marked `{mark}`: one timeout is retried, a second one skips it "
+        "(jadu-loop blocks instead). Nothing to do.",
+        "stalled": "⛔ The loop stopped and needs you.\n"
+        "It ran {n} times in a row without moving a subtask forward, so something is stuck.\n"
+        "Details are in `.loop_state/runs.log`.",
+    },
+    "fa": {
+        "unreadable": "بررسی مصرف جواب نداد (دستور `/usage` کند بود یا خطا داد).",
+        "over": "{name} به {pct}٪ رسیده (حد: {line}٪)؛ دوباره پر می‌شود: {resets}.",
+        "names": {"5-hour": "سهمیه‌ی ۵ ساعته", "weekly": "سهمیه‌ی هفتگی"},
+        "ok": "مصرف الان: ۵ ساعته {a}٪، هفتگی {b}٪.",
+        "other": "دلیل: {reason}",
+        "resumed": "▶️ loop دوباره راه افتاد.\n{why}",
+        "stopped": "⛔ loop متوقف شد و تا تو کاری نکنی ادامه نمی‌دهد.\n{why}",
+        "wait_unreadable": "⏸ loop چند دقیقه صبر می‌کند.\n{why}\n"
+        "هر ۱۰ دقیقه دوباره امتحان می‌کند و خودش ادامه می‌دهد. کاری لازم نیست.",
+        "wait_limit": "⏸ loop صبر می‌کند تا سهمیه دوباره پر شود.\n{why}\n"
+        "بعد خودش ادامه می‌دهد. کاری لازم نیست.",
+        "killed": "⏸ کار نیمه‌کاره را متوقف کردم.\n{why}\nهر چه تمام شده بود commit شده؛ "
+        "وقتی سهمیه اجازه داد، از همان زیرکار ادامه می‌دهم. کاری لازم نیست.",
+        "timeout": "⏸ اجرایی را که {minutes} دقیقه هیچ پیشرفتی نداشت متوقف کردم.\n"
+        "زیرکارش علامت `{mark}` گرفت: بار اول دوباره امتحان می‌شود، بار دوم کنار گذاشته می‌شود "
+        "(در jadu-loop به‌جایش متوقف می‌شود). کاری لازم نیست.",
+        "stalled": "⛔ loop متوقف شد و به تو نیاز دارد.\n"
+        "{n} بار پشت سر هم اجرا شد و هیچ زیرکاری جلو نرفت، پس چیزی گیر کرده.\n"
+        "جزئیات در `.loop_state/runs.log` است.",
+    },
+}
+
+
+def _lang() -> dict:
+    return MESSAGES.get(os.environ.get("LOOP_NOTIFY_LANG", "en"), MESSAGES["en"])
+
+
+def say(key: str, **fields) -> str:
+    return _lang()[key].format(**fields)
+
+
+def _claude(*args: str) -> str:
+    env = {k: v for k, v in os.environ.items() if k != "CLAUDECODE"}
+    # chat_usage_guard.py skips itself inside this call, so the hook never recurses.
+    env["JADU_USAGE_CHECK"] = "1"
+    proc = subprocess.run(
+        [shutil.which("claude") or "claude", *args],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        timeout=180,  # /usage sometimes takes over a minute; 60 s killed healthy runs
+        env=env,
+    )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"claude {' '.join(args)} exited {proc.returncode}: {proc.stderr.strip()}"
+        )
+    return proc.stdout
 
 
 def fetch_usage_text() -> str:
-    proc = subprocess.run(
-        ["claude", "-p", "/usage", "--output-format", "json"],
-        capture_output=True,
-        text=True,
-        timeout=30,
-    )
-    if proc.returncode != 0:
-        raise RuntimeError(f"claude -p /usage exited {proc.returncode}: {proc.stderr.strip()}")
-    data = json.loads(proc.stdout)
-    return data.get("result", "")
+    return json.loads(_claude("-p", "/usage", "--output-format", "json")).get("result", "")
 
 
-def parse_percentages(text: str) -> tuple[int | None, int | None]:
-    session_match = SESSION_RE.search(text)
-    weekly_match = WEEKLY_RE.search(text)
-    session = int(session_match.group(1)) if session_match else None
-    weekly = int(weekly_match.group(1)) if weekly_match else None
-    return session, weekly
+def fetch_auth_method() -> str:
+    return json.loads(_claude("auth", "status")).get("authMethod", "")
+
+
+def parse_usage(text: str) -> dict[str, tuple[int, str]]:
+    """{limit name: (percent used, reset text)} for every limit found in the text."""
+    found = {}
+    for name, (regex, _, _) in LIMITS.items():
+        m = regex.search(text)
+        if m:
+            found[name] = (int(m.group(1)), (m.group(2) or "").strip())
+    return found
+
+
+def decide(text: str, auth_method: str, env: dict, watch: bool = False) -> tuple[int, str]:
+    """Pure decision: (GO/WAIT/STOP, one-line reason)."""
+    if env.get("ANTHROPIC_API_KEY"):
+        return STOP, "ANTHROPIC_API_KEY is set — runs would bill that key, not the subscription"
+    if auth_method != "claude.ai":
+        return STOP, f"logged in via {auth_method!r}, not the claude.ai subscription"
+    if SUBSCRIPTION_LINE not in text:
+        return STOP, "/usage does not say 'using your subscription' — would spend usage credits"
+    usage = parse_usage(text)
+    missing = [name for name in LIMITS if name not in usage]
+    if missing:
+        return WAIT, f"could not read {', '.join(missing)} usage from /usage"
+    over = []
+    for name, (_, start, ceiling) in LIMITS.items():
+        pct, resets = usage[name]
+        line = ceiling if watch else start
+        if pct >= line:
+            over.append(f"{name} at {pct}% (line {line}%, resets {resets or '?'})")
+    summary = ", ".join(f"{n} {usage[n][0]}%" for n in LIMITS)
+    if over:
+        return WAIT, "paused: " + "; ".join(over)
+    return GO, f"ok: {summary}"
+
+
+def check(watch: bool = False) -> tuple[int, str]:
+    try:
+        return decide(fetch_usage_text(), fetch_auth_method(), dict(os.environ), watch)
+    except Exception as e:  # unreadable usage is never treated as fine
+        return WAIT, f"usage check failed: {e}"
+
+
+def unreadable(reason: str) -> bool:
+    """True when the check could not read usage at all (slow or broken /usage), as opposed to
+    reading it and finding a limit over its line. The watchdog tolerates a few of these."""
+    return reason.startswith(("usage check failed", "could not read"))
+
+
+def explain(reason: str) -> str:
+    """The reason in plain words for the notification; raw details stay in runs.log."""
+    if unreadable(reason):
+        return say("unreadable")
+    over = re.findall(r"(5-hour|weekly) at (\d+)% \(line (\d+)%, resets ([^)]*\)?)", reason)
+    if over:
+        names = _lang()["names"]
+        return " ".join(
+            say("over", name=names[n], pct=p, line=line, resets=r) for n, p, line, r in over
+        )
+    m = re.match(r"ok: 5-hour (\d+)%, weekly (\d+)%", reason)
+    if m:
+        return say("ok", a=m[1], b=m[2])
+    return say("other", reason=reason)
 
 
 def notify(message: str) -> None:
-    if not NOTIFY_SCRIPT.exists():
+    if NOTIFY_SCRIPT.exists():
+        subprocess.run(
+            [sys.executable, str(NOTIFY_SCRIPT), message], capture_output=True, text=True
+        )
+
+
+def notify_change(verdict: int, reason: str) -> None:
+    """Message once when a pause/stop starts and once when it ends, not every tick."""
+    if verdict == GO:
+        if FLAG_FILE.exists():
+            FLAG_FILE.unlink()
+            notify(say("resumed", why=explain(reason)))
         return
-    subprocess.run(
-        ["python3", str(NOTIFY_SCRIPT), message],
-        capture_output=True,
-        text=True,
-    )
+    kind = "stop" if verdict == STOP else "wait"
+    if not FLAG_FILE.exists() or FLAG_FILE.read_text(encoding="utf-8").strip() != kind:
+        FLAG_FILE.parent.mkdir(parents=True, exist_ok=True)
+        FLAG_FILE.write_text(kind + "\n", encoding="utf-8")
+        if verdict == STOP:
+            key = "stopped"
+        else:
+            key = "wait_unreadable" if unreadable(reason) else "wait_limit"
+        notify(say(key, why=explain(reason)))
 
 
 def main() -> None:
-    try:
-        text = fetch_usage_text()
-        session, weekly = parse_percentages(text)
-        if session is None and weekly is None:
-            raise ValueError(f"could not parse session/weekly percentages from: {text!r}")
-    except Exception as e:
-        print(f"usage check failed, failing closed: {e}", file=sys.stderr)
-        notify(f"usage-margin check failed ({e}) — blocking jadu-loop until this is fixed")
-        sys.exit(1)
-
-    highest = max(v for v in (session, weekly) if v is not None)
-
-    if highest >= MARGIN_PERCENT:
-        if not FLAG_FILE.exists():
-            FLAG_FILE.parent.mkdir(parents=True, exist_ok=True)
-            FLAG_FILE.write_text(f"{highest}\n")
-            first_line = text.splitlines()[0] if text else ""
-            notify(
-                f"usage margin reached ({highest}% >= {MARGIN_PERCENT}%) — "
-                f"pausing jadu-loop until usage drops back down.\n{first_line}"
-            )
-        print(f"usage at {highest}% >= margin {MARGIN_PERCENT}% — blocking", file=sys.stderr)
-        sys.exit(1)
-
-    if FLAG_FILE.exists():
-        FLAG_FILE.unlink()
-        notify(f"usage back under margin ({highest}% < {MARGIN_PERCENT}%) — jadu-loop resuming")
-
-    print(f"usage at {highest}% < margin {MARGIN_PERCENT}% — proceeding", file=sys.stderr)
-    sys.exit(0)
+    verdict, reason = check(watch="--watch" in sys.argv)
+    notify_change(verdict, reason)
+    print(reason, file=sys.stderr)
+    sys.exit(verdict)
 
 
 if __name__ == "__main__":

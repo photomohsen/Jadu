@@ -16,7 +16,7 @@ python3 scripts/jadu-loop/check_loop_queue.py \
 
 Not `--dangerously-skip-permissions`. `acceptEdits` auto-approves file edits (this workflow's actual job) while leaving Bash commands gated by the project's own `.claude/settings.local.json` allowlist, so an `ACTION`/`VERIFY` line can never reach for a command outside what's already approved there. Author `LOOP_TASK.md` subtasks with that allowlist in mind — if a subtask needs a new command, add it to the allowlist first, in a normal supervised session, never as part of the loop itself.
 
-`check_usage_margin.py` is a free pre-check — it queries `claude -p "/usage"` (zero API cost) and refuses to invoke `/jadu-loop` if usage for the current session or week is at/over a configurable margin (default 80%), notifying once and auto-clearing once usage drops back down. See `scripts/jadu-loop/README.md` for setup.
+`check_usage_margin.py` is a free pre-check — it queries `claude -p "/usage"` (zero API cost) and judges the 5-hour and weekly limits separately: a new run starts only below the start lines (80% / 95% by default), and it stops outright if Claude Code isn't running on the subscription. For a long unattended task use `python3 scripts/jadu-loop/run_loop.py` instead of a hand-rolled loop: it sleeps until a limit resets and then continues, and stops a running task at the ceilings (90% / 98%), so the loop never runs into usage credits. It also kills a run that goes 30 minutes without a commit or a change to `LOOP_TASK.md` and marks the open subtask `TIMEOUT 1` / `TIMEOUT 2` (step 1). See `scripts/jadu-loop/README.md` for setup.
 
 **Do not create an OS-level cron entry for this on your own initiative** (this is a repo-wide Jadu rule — see `AGENTS.md`). A simple hand-run `while true; do <invocation above>; sleep <N>; done` loop in its own terminal is the default way to run this unattended for a long task. Only wire up `cron` if the project owner explicitly asks for it.
 
@@ -36,12 +36,14 @@ Read `LOOP_TASK.md` in the current directory. Note `STATUS`, `BRANCH`, the `## B
 
 If this is the very first subtask (`TYPE: branch`) and the branch named in `BRANCH:` doesn't exist yet, this run will create it.
 
+Uncommitted changes at the start of a run are the open subtask's partial work from a run that was stopped (by the usage watchdog or the time cap). Keep them and finish that subtask from there — never stash or discard them, never commit them under another subtask. If the open subtask's line carries `TIMEOUT 1` (written by `run_loop.py`), resume it with a fresh time budget. `TIMEOUT 2` → block it at once (step 2, item 6), reason `timed out twice`.
+
 ### 2. Process subtasks in sequence, in this one invocation
 
-Track the wall-clock start time. For each open subtask, top to bottom:
+For each open subtask, top to bottom:
 
 0. **Group awareness:** a subtask may carry an optional `GROUP: <name>` line. Subtasks sharing the same `GROUP:` value must be completed together in this one invocation, back to back, once the first one starts — they exist as a group specifically because later subtasks in it depend on context freshly built by an earlier one, and starting a new invocation for the next subtask would mean a blank conversation with none of that context. Never let a group span two invocations. **`GROUP:` only forces subtasks to run back-to-back — it does NOT defer any subtask's own `VERIFY` until the group finishes.** Each subtask's `VERIFY` still runs immediately after its own `ACTION`, so a `LOOP_TASK.md` author must never write a subtask whose `VERIFY` depends on an artifact a *later* subtask (grouped or not) will create — see `docs/jadu-loop-authoring-guide.md`.
-1. **Soft time check first:** if more than ~10 minutes have elapsed since step 0, do not start this subtask — unless it shares a `GROUP:` with the subtask you just finished, in which case finish the whole group first, then apply the check before the next group or standalone subtask. This must never fire mid-subtask, and never mid-group — only between groups, or between standalone ungrouped subtasks.
+1. **Time budget:** note the time (`date`) when you start each subtask; it gets **20 minutes**. Past that, start no new fix attempt: if its `VERIFY` passes, commit and continue; otherwise block it (item 6), naming the time limit as the last failure.
 2. Run the subtask's `ACTION` exactly as written — no interpretation, no substitution, no "improving" it.
 3. Run its `VERIFY` check.
 4. **VERIFY passes:** `git add` exactly the files this subtask touched (never `git add -A`) and commit with the message the subtask specifies (or a short, obvious one if none is given). Check the subtask's box in `LOOP_TASK.md` and commit that too. Continue to the next subtask.
@@ -51,30 +53,32 @@ Track the wall-clock start time. For each open subtask, top to bottom:
 
 If every subtask (including the final `finalize` one) is done and verified: move `LOOP_TASK.md` to `LOOP_TASK_ARCHIVE/<today's date>-<slug from BRANCH>.md`, commit that move, and note the task is fully complete.
 
+Before the run ends, however it ends: stop every preview server, watcher or background process this run started.
+
 ### 3. Log
 
 Append one line to `logs/loop.log` (create the file if missing): timestamp, branch/task name, subtasks completed this run, and end state (`in progress` / `blocked` / `complete`). This is a quick-glance history separate from whatever the invoking shell redirects to its own log file.
 
 ### 4. Notify
 
-If a notification channel is configured for this project (see `scripts/jadu-loop/README.md` — Telegram is the shipped default, but the script is a thin, swappable wrapper), send exactly one message per invocation via `python3 scripts/jadu-loop/notify_telegram.py "<message>"` (send-only — never wait for or read a reply). If no notification script is configured, skip this step — it's optional, not load-bearing for the mechanism itself.
+If a notification channel is configured for this project (see `scripts/jadu-loop/README.md` — Telegram is the shipped default, but the script is a thin, swappable wrapper), send a message via `python3 scripts/jadu-loop/notify_telegram.py "<message>"` (send-only — never wait for or read a reply) **only** when the task is complete (archived) or the run blocks or stops early. A subtask finishing sends nothing; it appears in the next report. If no notification script is configured, skip this step — it's optional, not load-bearing for the mechanism itself.
 
 Compose the message in whatever language the project owner reads these in — match `AGENTS.md`/`CLAUDE.md` if they specify one, otherwise default to English. Keep technical tokens (branch name, subtask numbers, file paths, commands/error text) in their own `code span`s or on their own line, never inline mid-sentence unwrapped — this matters most for RTL languages, where an unwrapped Latin token breaks rendering.
 
 Structure, regardless of language, so a blocked run is unmistakable from a normal one at a glance:
 
-**Not blocked** (finished the run cleanly — soft time limit or full task completion):
+**Complete** (all subtasks done and archived):
 ```
 <branch>
 
 ✅ Done (subtasks <range/list>):
 • <one short line per completed subtask — not the raw commit message>
 
-⏱ <why it stopped: hit the soft time limit / all subtasks done and archived>
-▶️ Next: subtask `<N>` — <short description>
+📄 PR: <url>
+▶️ Next: <the next queued task / nothing queued>
 ```
 
-**Blocked** (a `VERIFY` failed twice, or a `review-checkpoint` was hit): lead with something that stands out at a glance —
+**Blocked** (a `VERIFY` failed twice, the time budget ran out, a `review-checkpoint` was hit, or anything else ended the run early): lead with something that stands out at a glance —
 ```
 🚨 Blocked — <branch>
 
@@ -87,7 +91,7 @@ Reason: <the exact VERIFY failure text, 1–2 lines; wrap commands/errors in `co
 👉 Needs a decision: <one line on what unblocking requires>
 ```
 
-If zero subtasks completed this run (blocked immediately, or hit the soft time limit before finishing even the first one), say that plainly instead of printing an empty "Done" section. Never fabricate detail to fill a section out.
+If zero subtasks completed this run (blocked immediately), say that plainly instead of printing an empty "Done" section. Never fabricate detail to fill a section out.
 
 ## Never do
 
